@@ -1,199 +1,255 @@
 <?php
-
-require_once '../../includes/config.php';
-require_once '../../includes/auth_helper.php';
-
+require_once '../../../includes/config.php';
+require_once '../../../includes/auth_helper.php';
 require_login();
 
-$search = $_GET['search'] ?? '';
+$msg   = $_GET['msg']   ?? '';
+$error = $_GET['error'] ?? '';
 
-$query = "
-SELECT
-    r.*,
-    COUNT(b.id) AS total_buku
-FROM racks r
-LEFT JOIN books b
-ON r.id = b.rack_id
-WHERE
-    r.nama LIKE '%$search%'
-    OR r.kode_rak LIKE '%$search%'
-GROUP BY r.id
-ORDER BY r.kode_rak ASC
-";
+$search = trim($_GET['q'] ?? '');
+$sq     = mysqli_real_escape_string($conn, $search);
+$where  = $search ? "WHERE r.nama LIKE '%$sq%' OR r.kode_rak LIKE '%$sq%' OR r.lokasi LIKE '%$sq%'" : '';
 
-$data = mysqli_query($conn, $query);
-
+$data = mysqli_query($conn,
+    "SELECT r.*, COUNT(b.id) AS total_buku
+     FROM racks r
+     LEFT JOIN books b ON r.id = b.rack_id
+     $where
+     GROUP BY r.id
+     ORDER BY r.kode_rak ASC"
+);
+$total = mysqli_num_rows($data);
 ?>
-
-<!doctype html>
+<!DOCTYPE html>
 <html lang="id">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kelola Rak Buku — Litera</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--sidebar-bg:#C9D8E8;--sidebar-w:240px;--blue-dark:#2563EB;--navy:#1E3A5F;--bg:#EDF2F7;--muted:#64748B;--red:#EF4444}
+body{font-family:'Nunito',sans-serif;background:var(--bg);min-height:100vh;display:flex}
+.sidebar{width:var(--sidebar-w);height:100vh;background:var(--sidebar-bg);border-radius:0 24px 24px 0;display:flex;flex-direction:column;padding-bottom:24px;position:fixed;top:0;left:0;z-index:100;box-shadow:2px 0 16px rgba(30,58,95,.08);overflow:hidden}
+.sidebar-logo{display:flex;flex-direction:column;align-items:center;padding:28px 16px 20px;border-bottom:1px solid rgba(30,58,95,.12)}
+.sidebar-logo img{width:90px;height:90px;object-fit:contain}
+.sidebar-logo .logo-text{font-size:1.25rem;font-weight:800;letter-spacing:4px;background:linear-gradient(90deg,#4ecdc4,#45b7d1,#96c93d,#f7971e,#f9d62e);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-top:4px}
+.sidebar-nav{flex:1;padding:16px 0;overflow-y:auto}
+.nav-group-label{font-size:.68rem;font-weight:800;color:var(--navy);letter-spacing:1.4px;text-transform:uppercase;padding:14px 24px 6px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 24px 9px 32px;color:#374151;text-decoration:none;font-size:.875rem;font-weight:500;border-radius:0 20px 20px 0;margin-right:16px;transition:all .2s;position:relative}
+.nav-item:hover{background:rgba(37,99,235,.1);color:var(--blue-dark);font-weight:600}
+.nav-item.active{background:#fff;color:var(--blue-dark);font-weight:700;box-shadow:0 2px 8px rgba(37,99,235,.12)}
+.nav-item.active::before{content:'';position:absolute;left:0;top:6px;bottom:6px;width:3px;background:var(--blue-dark);border-radius:0 3px 3px 0}
+.sidebar-footer{padding:0 16px;margin-top:8px}
+.btn-logout{display:flex;align-items:center;gap:8px;width:100%;padding:10px 16px;background:rgba(239,68,68,.12);color:#DC2626;border:none;border-radius:12px;font-family:'Nunito',sans-serif;font-size:.85rem;font-weight:700;cursor:pointer;text-decoration:none;transition:background .2s}
+.btn-logout:hover{background:rgba(239,68,68,.22)}
+.main{margin-left:var(--sidebar-w);flex:1;min-height:100vh;display:flex;flex-direction:column}
+.page-header{padding:20px 32px 18px;background:#fff;border-bottom:1px solid #E2E8F0}
+.page-header h1{font-size:1.35rem;font-weight:800;color:var(--navy)}
+.page-header p{font-size:.85rem;color:var(--muted);margin-top:3px}
+.content{padding:28px 32px;flex:1}
+.alert{padding:12px 18px;border-radius:10px;font-size:.875rem;margin-bottom:20px;display:flex;align-items:center;gap:8px}
+.ok{background:#F0FDF4;border:1px solid #BBF7D0;color:#16A34A}
+.err{background:#FEF2F2;border:1px solid #FECACA;color:var(--red)}
+.form-card{background:#fff;border-radius:16px;padding:28px 32px;border:1px solid #E2ECF8;box-shadow:0 2px 12px rgba(30,58,95,.06);margin-bottom:28px}
+.form-card h2{font-size:1.05rem;font-weight:800;color:var(--navy);margin-bottom:20px}
+.grid4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:16px}
+.fg{display:flex;flex-direction:column;gap:5px}
+.fg.full4{grid-column:span 4}
+label{font-size:.76rem;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.4px}
+input[type=text],input[type=number],textarea{padding:11px 14px;border:2px solid #C7D8F8;border-radius:10px;font-family:'Nunito',sans-serif;font-size:.88rem;color:var(--navy);background:#fff;outline:none;transition:border-color .2s,box-shadow .2s;width:100%}
+input:focus,textarea:focus{border-color:var(--blue-dark);box-shadow:0 0 0 3px rgba(37,99,235,.1)}
+textarea{resize:vertical;min-height:80px}
+.btn-primary{padding:11px 28px;background:linear-gradient(135deg,var(--navy),var(--blue-dark));color:#fff;border:none;border-radius:10px;font-family:'Nunito',sans-serif;font-size:.9rem;font-weight:700;cursor:pointer;transition:opacity .2s,transform .15s}
+.btn-primary:hover{opacity:.9;transform:translateY(-1px)}
+.table-card{background:#fff;border-radius:16px;border:1px solid #E2ECF8;box-shadow:0 2px 12px rgba(30,58,95,.06);overflow:hidden}
+.table-head{display:flex;align-items:center;justify-content:space-between;padding:20px 28px;border-bottom:1px solid #F1F5F9;flex-wrap:wrap;gap:12px}
+.table-head h2{font-size:1.05rem;font-weight:800;color:var(--navy)}
+.search-form{display:flex;gap:8px}
+.search-form input{padding:9px 14px;border:2px solid #C7D8F8;border-radius:9px;font-family:'Nunito',sans-serif;font-size:.85rem;color:var(--navy);outline:none;width:220px}
+.search-form input:focus{border-color:var(--blue-dark)}
+.search-form button{padding:9px 18px;background:var(--blue-dark);color:#fff;border:none;border-radius:9px;cursor:pointer;font-size:.85rem;font-weight:700;font-family:'Nunito',sans-serif}
+table{width:100%;border-collapse:collapse}
+th{padding:12px 18px;text-align:left;font-size:.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;border-bottom:2px solid #F1F5F9;background:#FAFBFF}
+td{padding:13px 18px;font-size:.86rem;color:var(--navy);border-bottom:1px solid #F8FAFC;vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:#FAFBFF}
+.badge-lokasi{display:inline-block;padding:3px 11px;border-radius:20px;font-size:.72rem;font-weight:700;background:#F0FDF4;color:#166534;border:1px solid #BBF7D0}
+.actions{display:flex;gap:7px}
+.btn-edit{padding:5px 14px;background:#EFF6FF;color:var(--blue-dark);border:1px solid #BFDBFE;border-radius:7px;font-size:.78rem;font-weight:700;text-decoration:none;transition:background .2s}
+.btn-edit:hover{background:#DBEAFE}
+.btn-del{padding:5px 12px;background:#FEF2F2;color:var(--red);border:1px solid #FECACA;border-radius:7px;font-size:.78rem;font-weight:700;text-decoration:none;transition:background .2s}
+.btn-del:hover{background:#FEE2E2}
+.empty{text-align:center;padding:40px;color:var(--muted);font-size:.9rem}
+.bar-wrap{display:flex;align-items:center;gap:8px}
+.bar-bg{flex:1;height:6px;background:#E2E8F0;border-radius:3px;overflow:hidden;min-width:80px}
+.bar-fill{height:100%;border-radius:3px;transition:width .3s}
+</style>
+</head>
+<body>
+<aside class="sidebar">
+    <div class="sidebar-logo">
+        <img src="/LITERA-app/assets/LITERA.png" alt="LITERA">
+        <span class="logo-text">LITERA</span>
+    </div>
+    <nav class="sidebar-nav">
+        <div class="nav-group-label">Main</div>
+        <a href="/LITERA-app/dashboard.php" class="nav-item">
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+            Dashboard
+        </a>
+        <div class="nav-group-label">Koleksi</div>
+        <a href="/LITERA-app/modules/books/index.php" class="nav-item">
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+            Buku
+        </a>
+        <a href="/LITERA-app/modules/categories-racks/category/index.php" class="nav-item">
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+            Kategori
+        </a>
+        <a href="/LITERA-app/modules/categories-racks/rack/index.php" class="nav-item active">
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="5" rx="1"/><rect x="2" y="10" width="20" height="5" rx="1"/><rect x="2" y="17" width="20" height="5" rx="1"/></svg>
+            Rak Buku
+        </a>
+        <div class="nav-group-label">Transaksi</div>
+        <a href="/LITERA-app/modules/borrowings/index.php" class="nav-item">
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+            Peminjaman
+        </a>
+        <a href="/LITERA-app/modules/returns-fines/returns/index.php" class="nav-item">
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.5"/></svg>
+            Pengembalian
+        </a>
+        <a href="/LITERA-app/modules/returns-fines/fines/index.php" class="nav-item">
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            Denda
+        </a>
+        <?php if (is_admin()): ?>
+        <div class="nav-group-label">Manajemen</div>
+        <a href="/LITERA-app/pages/users.php" class="nav-item">
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            Pengguna
+        </a>
+                <a href="reports.php" class="nav-item <?= $cur==='reports.php'?'active':'' ?>">
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+            Laporan
+        </a>
+        <?php endif; ?>
+    </nav>
+    <div class="sidebar-footer">
+        <a href="/LITERA-app/modules/users-auth/logout.php" class="btn-logout">
+            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+            Logout
+        </a>
+    </div>
+</aside>
 
-    <title>Manajemen Rak Buku</title>
+<main class="main">
+    <div class="page-header">
+        <h1><?= is_admin() ? 'Kelola Rak Buku' : 'Rak Buku' ?></h1>
+        <p><?= is_admin() ? 'Tambah, edit, dan hapus data rak penyimpanan buku perpustakaan.' : 'Daftar rak buku yang tersedia di perpustakaan.' ?></p>
+    </div>
+    <div class="content">
+        <?php if ($msg):  ?><div class="alert ok" >✅ <?= htmlspecialchars($msg)   ?></div><?php endif; ?>
+        <?php if ($error):?><div class="alert err">⚠️ <?= htmlspecialchars($error) ?></div><?php endif; ?>
 
-    <script src="https://cdn.tailwindcss.com"></script>
-  </head>
-
-  <body class="bg-gray-100">
-    <?php include '../../includes/sidebar.php'; ?> <?php include
-    '../../includes/header.php'; ?>
-
-    <div class="ml-80 mt-32 p-8">
-      <div class="grid grid-cols-3 gap-8">
-        <?php if(is_admin()): ?>
-
-        <!-- FORM TAMBAH -->
-
-        <div class="bg-white rounded-2xl shadow-lg p-6">
-          <h2 class="text-2xl font-bold mb-6">Tambah Rak Buku</h2>
-
-          <form action="create.php" method="POST" class="space-y-4">
-            <div>
-              <label class="block mb-2"> Kode Rak </label>
-
-              <input
-                type="text"
-                name="kode_rak"
-                required
-                class="w-full border rounded-xl p-3"
-              />
-            </div>
-
-            <div>
-              <label class="block mb-2"> Nama Rak </label>
-
-              <input
-                type="text"
-                name="nama"
-                required
-                class="w-full border rounded-xl p-3"
-              />
-            </div>
-
-            <div>
-              <label class="block mb-2"> Lokasi </label>
-
-              <input
-                type="text"
-                name="lokasi"
-                class="w-full border rounded-xl p-3"
-              />
-            </div>
-
-            <div>
-              <label class="block mb-2"> Kapasitas </label>
-
-              <input
-                type="number"
-                name="kapasitas"
-                value="50"
-                class="w-full border rounded-xl p-3"
-              />
-            </div>
-
-            <div>
-              <label class="block mb-2"> Deskripsi </label>
-
-              <textarea
-                name="deskripsi"
-                rows="4"
-                class="w-full border rounded-xl p-3"
-              ></textarea>
-            </div>
-
-            <button
-              type="submit"
-              class="w-full bg-blue-500 text-white py-3 rounded-xl hover:bg-blue-600"
-            >
-              Tambah Rak
-            </button>
-          </form>
+        <?php if (is_admin()): ?>
+        <div class="form-card">
+            <h2>+ Tambah Rak Buku Baru</h2>
+            <form method="POST" action="create.php">
+                <div class="grid4">
+                    <div class="fg">
+                        <label>Kode Rak</label>
+                        <input type="text" name="kode_rak" placeholder="Contoh: RAK-A1" required>
+                    </div>
+                    <div class="fg">
+                        <label>Nama Rak</label>
+                        <input type="text" name="nama" placeholder="Contoh: Rak Fiksi A" required>
+                    </div>
+                    <div class="fg">
+                        <label>Lokasi</label>
+                        <input type="text" name="lokasi" placeholder="Contoh: Lantai 1">
+                    </div>
+                    <div class="fg">
+                        <label>Kapasitas</label>
+                        <input type="number" name="kapasitas" value="50" min="1">
+                    </div>
+                    <div class="fg full4">
+                        <label>Deskripsi</label>
+                        <textarea name="deskripsi" placeholder="Deskripsi singkat rak (opsional)"></textarea>
+                    </div>
+                </div>
+                <div style="margin-top:20px">
+                    <button type="submit" class="btn-primary">+ Tambah Rak</button>
+                </div>
+            </form>
         </div>
-
         <?php endif; ?>
 
-        <!-- TABEL -->
-
-        <div
-          class="<?= is_admin() ? 'col-span-2' : 'col-span-3'; ?> bg-white rounded-2xl shadow-lg p-6"
-        >
-          <div class="flex justify-between items-center mb-6">
-            <h2 class="text-2xl font-bold">Data Rak Buku</h2>
-
-            <form>
-              <input
-                type="text"
-                name="search"
-                placeholder="Cari rak..."
-                value="<?= htmlspecialchars($search) ?>"
-                class="border rounded-xl p-2"
-              />
-            </form>
-          </div>
-
-          <div class="overflow-x-auto">
-            <table class="w-full">
-              <thead>
-                <tr class="bg-blue-100">
-                  <th class="p-3">ID</th>
-                  <th>Kode</th>
-                  <th>Nama</th>
-                  <th>Lokasi</th>
-                  <th>Kapasitas</th>
-                  <th>Total Buku</th>
-
-                  <?php if(is_admin()): ?>
-                  <th>Aksi</th>
-                  <?php endif; ?>
-                </tr>
-              </thead>
-
-              <tbody>
-                <?php while($row = mysqli_fetch_assoc($data)): ?>
-
-                <tr class="border-b text-center">
-                  <td class="p-3"><?= $row['id'] ?></td>
-
-                  <td><?= htmlspecialchars($row['kode_rak']) ?></td>
-
-                  <td><?= htmlspecialchars($row['nama']) ?></td>
-
-                  <td><?= htmlspecialchars($row['lokasi']) ?></td>
-
-                  <td><?= $row['kapasitas'] ?></td>
-
-                  <td><?= $row['total_buku'] ?></td>
-
-                  <?php if(is_admin()): ?>
-
-                  <td class="space-x-2">
-                    <a
-                      href="edit.php?id=<?= $row['id'] ?>"
-                      class="bg-yellow-400 px-3 py-1 rounded"
-                    >
-                      Edit
-                    </a>
-
-                    <a
-                      href="delete.php?id=<?= $row['id'] ?>"
-                      onclick="return confirm('Hapus rak ini?');"
-                      class="bg-red-500 text-white px-3 py-1 rounded"
-                    >
-                      Hapus
-                    </a>
-                  </td>
-
-                  <?php endif; ?>
-                </tr>
-
-                <?php endwhile; ?>
-              </tbody>
+        <div class="table-card">
+            <div class="table-head">
+                <h2>Daftar Rak Buku (<?= $total ?>)</h2>
+                <form method="GET" class="search-form">
+                    <input type="text" name="q" placeholder="Cari kode / nama / lokasi…" value="<?= htmlspecialchars($search) ?>">
+                    <button type="submit">Cari</button>
+                </form>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Kode Rak</th>
+                        <th>Nama Rak</th>
+                        <th>Lokasi</th>
+                        <th>Kapasitas</th>
+                        <?php if (is_admin()): ?><th>Terisi</th><?php endif; ?>
+                        <?php if (is_admin()): ?><th>Aksi</th><?php endif; ?>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php if ($total === 0): ?>
+                        <tr><td colspan="<?= is_admin() ? 7 : 5 ?>" class="empty">Tidak ada rak ditemukan.</td></tr>
+                    <?php else:
+                        $no = 1;
+                        while ($row = mysqli_fetch_assoc($data)):
+                            $pct = $row['kapasitas'] > 0 ? min(100, round($row['total_buku'] / $row['kapasitas'] * 100)) : 0;
+                            $color = $pct >= 90 ? '#EF4444' : ($pct >= 70 ? '#F59E0B' : '#2563EB');
+                    ?>
+                        <tr>
+                            <td><?= $no++ ?></td>
+                            <td><code style="background:#EFF6FF;color:var(--blue-dark);padding:2px 8px;border-radius:6px;font-size:.78rem;font-weight:700"><?= htmlspecialchars($row['kode_rak']) ?></code></td>
+                            <td style="font-weight:600"><?= htmlspecialchars($row['nama']) ?></td>
+                            <td><?= $row['lokasi'] ? '<span class="badge-lokasi">'.htmlspecialchars($row['lokasi']).'</span>' : '-' ?></td>
+                            <td><?= $row['kapasitas'] ?> buku</td>
+                            <?php if (is_admin()): ?>
+                            <td>
+                                <div class="bar-wrap">
+                                    <span style="font-size:.8rem;font-weight:700;min-width:20px"><?= $row['total_buku'] ?></span>
+                                    <div class="bar-bg"><div class="bar-fill" style="width:<?= $pct ?>%;background:<?= $color ?>"></div></div>
+                                    <span style="font-size:.75rem;color:var(--muted)"><?= $pct ?>%</span>
+                                </div>
+                            </td>
+                            <?php endif; ?>
+                            <?php if (is_admin()): ?>
+                            <td>
+                                <div class="actions">
+                                    <a href="edit.php?id=<?= $row['id'] ?>" class="btn-edit">Edit</a>
+                                    <a href="delete.php?id=<?= $row['id'] ?>"
+                                       class="btn-del"
+                                       onclick="return confirm('Hapus rak &quot;<?= htmlspecialchars($row['nama']) ?>&quot;?')">
+                                        Hapus
+                                    </a>
+                                </div>
+                            </td>
+                            <?php endif; ?>
+                        </tr>
+                    <?php endwhile; endif; ?>
+                </tbody>
             </table>
-          </div>
         </div>
-      </div>
     </div>
-  </body>
+</main>
+<script src="/LITERA-app/assets/sidebar-drag.js"></script>
+</body>
 </html>

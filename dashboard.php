@@ -1,6 +1,6 @@
 <?php
-require_once '../includes/config.php';
-require_once '../includes/auth_helper.php';
+require_once 'includes/config.php';
+require_once 'includes/auth_helper.php';
 require_login();
 
 $user    = current_user();
@@ -475,11 +475,11 @@ code {
             <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
             Buku
         </a>
-        <a href="categories.php" class="nav-item">
+        <a href="/LITERA-app/modules/categories-racks/category/index.php" class="nav-item">
             <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
             Kategori
         </a>
-        <a href="racks.php" class="nav-item">
+        <a href="/LITERA-app/modules/categories-racks/rack/index.php" class="nav-item">
             <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="5" rx="1"/><rect x="2" y="10" width="20" height="5" rx="1"/><rect x="2" y="17" width="20" height="5" rx="1"/></svg>
             Rak Buku
         </a>

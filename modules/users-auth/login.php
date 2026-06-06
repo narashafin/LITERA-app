@@ -1,9 +1,9 @@
 <?php
-require_once '../includes/config.php';
-require_once '../includes/auth_helper.php';
+require_once '../../includes/config.php';
+require_once '../../includes/auth_helper.php';
 
 if (is_logged_in()) {
-    header('Location: ../pages/dashboard.php');
+    header('Location: /LITERA-app/dashboard.php');
     exit();
 }
 
