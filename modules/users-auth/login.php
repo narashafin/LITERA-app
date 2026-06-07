@@ -38,7 +38,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $_SESSION['nama_role'] = $user['nama_role'];
                 $_SESSION['status']    = $user['status'];
                 $_SESSION['logged_in'] = true;
-                header('Location: ../pages/dashboard.php');
+                header('Location: pages/dashboard.php');
                 exit();
             } else {
                 $error = 'Password salah.';

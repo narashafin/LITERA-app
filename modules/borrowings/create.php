@@ -1,43 +1,22 @@
 <?php
-require_once __DIR__ . '/../../../includes/config.php';
-require_once __DIR__ . '/../../../includes/auth_helper.php';
-require_admin();
+require_once '../../includes/config.php';
+require_once '../../includes/auth_helper.php';
+require_login();
 
-if (!isset($_GET['id'])) { header("Location: index.php"); exit; }
+// Cek apakah admin
+$isAdmin = ($_SESSION['role_id'] ?? 0) == 1;
 
-$id       = (int)$_GET['id'];
-$res      = mysqli_query($conn, "SELECT * FROM categories WHERE id=$id LIMIT 1");
-$category = mysqli_fetch_assoc($res);
-if (!$category) { header("Location: index.php"); exit; }
-
-$error = '';
-
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $kode      = mysqli_real_escape_string($conn, trim($_POST['kode']      ?? ''));
-    $nama      = mysqli_real_escape_string($conn, trim($_POST['nama']      ?? ''));
-    $deskripsi = mysqli_real_escape_string($conn, trim($_POST['deskripsi'] ?? ''));
-
-    if (empty($kode) || empty($nama)) {
-        $error = 'Kode dan nama kategori wajib diisi.';
-    } else {
-        $cek = mysqli_query($conn, "SELECT id FROM categories WHERE kode='$kode' AND id!=$id");
-        if (mysqli_num_rows($cek) > 0) {
-            $error = 'Kode kategori sudah dipakai kategori lain.';
-        } else {
-            mysqli_query($conn, "UPDATE categories SET kode='$kode', nama='$nama', deskripsi='$deskripsi' WHERE id=$id");
-            header("Location: index.php?msg=" . urlencode('Kategori berhasil diperbarui.'));
-            exit;
-        }
-    }
-}
+// Ambil data untuk form
+$users = mysqli_query($conn, "SELECT id, nama, username FROM users WHERE role_id = 2 AND status = 'aktif' ORDER BY nama ASC");
+$books = mysqli_query($conn, "SELECT id, judul, stok_tersedia FROM books WHERE stok_tersedia > 0 ORDER BY judul ASC");
 ?>
+
 <!DOCTYPE html>
 <html lang="id">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Edit Kategori — LITERA</title>
+    <title>Tambah Peminjaman — Litera</title>
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
     *,
@@ -65,6 +44,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         display: flex
     }
 
+    /* === SEMUA CSS DARI FILE KAMU (sama persis) === */
     .sidebar {
         width: var(--sidebar-w);
         height: 100vh;
@@ -183,10 +163,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         transition: background .2s
     }
 
-    .btn-logout:hover {
-        background: rgba(239, 68, 68, .22)
-    }
-
     .main {
         margin-left: var(--sidebar-w);
         flex: 1;
@@ -218,26 +194,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         flex: 1
     }
 
-    .alert.err {
-        padding: 12px 18px;
-        border-radius: 10px;
-        font-size: .875rem;
-        margin-bottom: 20px;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        background: #FEF2F2;
-        border: 1px solid #FECACA;
-        color: var(--red)
-    }
-
     .form-card {
         background: #fff;
         border-radius: 16px;
         padding: 28px 32px;
         border: 1px solid #E2ECF8;
         box-shadow: 0 2px 12px rgba(30, 58, 95, .06);
-        max-width: 680px
+        margin-bottom: 28px
     }
 
     .form-card h2 {
@@ -271,8 +234,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         letter-spacing: .4px
     }
 
-    input[type=text],
-    textarea {
+    input[type=text], input[type=date], select, textarea {
         padding: 11px 14px;
         border: 2px solid #C7D8F8;
         border-radius: 10px;
@@ -285,21 +247,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         width: 100%
     }
 
-    input:focus,
-    textarea:focus {
+    input:focus, select:focus, textarea:focus {
         border-color: var(--blue-dark);
         box-shadow: 0 0 0 3px rgba(37, 99, 235, .1)
     }
 
     textarea {
         resize: vertical;
-        min-height: 100px
-    }
-
-    .form-actions {
-        display: flex;
-        gap: 12px;
-        margin-top: 20px
+        min-height: 80px
     }
 
     .btn-primary {
@@ -320,23 +275,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         transform: translateY(-1px)
     }
 
-    .btn-cancel {
-        padding: 11px 22px;
-        background: #F1F5F9;
-        color: var(--navy);
-        border: 1px solid #D1DCF8;
+    .btn-secondary {
+        padding: 11px 28px;
+        background: #64748B;
+        color: #fff;
+        border: none;
         border-radius: 10px;
         font-family: 'Nunito', sans-serif;
-        font-size: .88rem;
-        font-weight: 600;
+        font-size: .9rem;
+        font-weight: 700;
+        cursor: pointer;
         text-decoration: none;
-        display: inline-flex;
-        align-items: center
+        display: inline-block;
     }
     </style>
 </head>
 
 <body>
+
     <aside class="sidebar">
         <div class="sidebar-logo">
             <img src="/LITERA-app/assets/LITERA.png" alt="LITERA">
@@ -361,7 +317,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </svg>
                 Buku
             </a>
-            <a href="/LITERA-app/modules/categories-racks/category/index.php" class="nav-item active">
+            <a href="/LITERA-app/modules/categories-racks/category/index.php" class="nav-item">
                 <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                     <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
                 </svg>
@@ -376,7 +332,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 Rak Buku
             </a>
             <div class="nav-group-label">Transaksi</div>
-            <a href="/LITERA-app/modules/borrowings/index.php" class="nav-item">
+            <a href="/LITERA-app/modules/borrowings/index.php" class="nav-item active">
                 <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
                     <polyline points="14 2 14 8 20 8" />
@@ -411,7 +367,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </svg>
                 Pengguna
             </a>
+            <a href="reports.php" class="nav-item <?= $cur==='reports.php'?'active':'' ?>">
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <line x1="18" y1="20" x2="18" y2="10" />
+                    <line x1="12" y1="20" x2="12" y2="4" />
+                    <line x1="6" y1="20" x2="6" y2="14" />
+                </svg>
+                Laporan
+            </a>
             <?php endif; ?>
+        <!-- Tambahkan link Pengembalian & Denda sesuai kebutuhan -->
         </nav>
         <div class="sidebar-footer">
             <a href="/LITERA-app/modules/users-auth/logout.php" class="btn-logout">
@@ -425,42 +390,58 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
     </aside>
 
-    <main class="main">
-        <div class="page-header">
-            <h1>Edit Kategori</h1>
-            <p>Perbarui data kategori buku.</p>
-        </div>
-        <div class="content">
-            <?php if ($error): ?><div class="alert err">⚠️ <?= htmlspecialchars($error) ?></div><?php endif; ?>
-            <div class="form-card">
-                <h2>✏️ Edit: <?= htmlspecialchars($category['nama']) ?></h2>
-                <form method="POST">
-                    <div class="grid2">
-                        <div class="fg">
-                            <label>Kode Kategori</label>
-                            <input type="text" name="kode" required
-                                value="<?= htmlspecialchars($_POST['kode'] ?? $category['kode']) ?>">
-                        </div>
-                        <div class="fg">
-                            <label>Nama Kategori</label>
-                            <input type="text" name="nama" required
-                                value="<?= htmlspecialchars($_POST['nama'] ?? $category['nama']) ?>">
-                        </div>
-                        <div class="fg full">
-                            <label>Deskripsi</label>
-                            <textarea
-                                name="deskripsi"><?= htmlspecialchars($_POST['deskripsi'] ?? $category['deskripsi']) ?></textarea>
-                        </div>
-                    </div>
-                    <div class="form-actions">
-                        <button type="submit" class="btn-primary">💾 Simpan Perubahan</button>
-                        <a href="index.php" class="btn-cancel">✕ Batal</a>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </main>
-    <script src="/LITERA-app/assets/sidebar-drag.js"></script>
-</body>
+<main class="main">
+    <div class="page-header">
+        <h1>Tambah Peminjaman Baru</h1>
+        <p>Isi data peminjaman buku perpustakaan</p>
+    </div>
 
+    <div class="content">
+        <div class="form-card">
+            <h2>Form Peminjaman</h2>
+            <form method="POST" action="store.php">
+                <div class="grid2">
+                    <div class="fg">
+                        <label>Anggota</label>
+                        <select name="user_id" required>
+                            <option value="">-- Pilih Anggota --</option>
+                            <?php while($u = mysqli_fetch_assoc($users)): ?>
+                                <option value="<?= $u['id'] ?>"><?= htmlspecialchars($u['nama']) ?> (<?= $u['username'] ?>)</option>
+                            <?php endwhile; ?>
+                        </select>
+                    </div>
+
+                    <div class="fg">
+                        <label>Tanggal Pinjam</label>
+                        <input type="date" name="tanggal_pinjam" value="<?= date('Y-m-d') ?>" required>
+                    </div>
+
+                    <div class="fg full">
+                        <label>Pilih Buku (tekan Ctrl/Cmd untuk multiple)</label>
+                        <select name="book_ids[]" multiple size="10" required style="min-height: 200px;">
+                            <?php while($b = mysqli_fetch_assoc($books)): ?>
+                                <option value="<?= $b['id'] ?>">
+                                    <?= htmlspecialchars($b['judul']) ?> (Stok: <?= $b['stok_tersedia'] ?>)
+                                </option>
+                            <?php endwhile; ?>
+                        </select>
+                    </div>
+
+                    <div class="fg full">
+                        <label>Catatan (Opsional)</label>
+                        <textarea name="catatan" placeholder="Catatan tambahan jika ada..."></textarea>
+                    </div>
+                </div>
+
+                <div style="margin-top: 25px;">
+                    <button type="submit" class="btn-primary">Simpan Peminjaman</button>
+                    <a href="index.php" class="btn-secondary" style="margin-left: 12px;">Batal</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</main>
+
+<script src="/LITERA-app/assets/sidebar-drag.js"></script>
+</body>
 </html>

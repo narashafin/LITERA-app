@@ -1,43 +1,38 @@
 <?php
-require_once __DIR__ . '/../../../includes/config.php';
-require_once __DIR__ . '/../../../includes/auth_helper.php';
-require_admin();
+require_once '../../includes/config.php';
 
-if (!isset($_GET['id'])) { header("Location: index.php"); exit; }
 
-$id       = (int)$_GET['id'];
-$res      = mysqli_query($conn, "SELECT * FROM categories WHERE id=$id LIMIT 1");
-$category = mysqli_fetch_assoc($res);
-if (!$category) { header("Location: index.php"); exit; }
+$msg   = $_GET['msg']   ?? '';
+$error = $_GET['error'] ?? '';
 
-$error = '';
+$search = trim($_GET['q'] ?? '');
+$sq     = mysqli_real_escape_string($conn, $search);
+$where  = $search ? "WHERE b.kode_pinjam LIKE '%$sq%' OR u.nama LIKE '%$sq%' OR bk.judul LIKE '%$sq%'" : '';
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $kode      = mysqli_real_escape_string($conn, trim($_POST['kode']      ?? ''));
-    $nama      = mysqli_real_escape_string($conn, trim($_POST['nama']      ?? ''));
-    $deskripsi = mysqli_real_escape_string($conn, trim($_POST['deskripsi'] ?? ''));
+$data = mysqli_query($conn, "
+    SELECT b.*, u.nama as nama_user, u.username,
+           COUNT(bd.id) as total_buku,
+           GROUP_CONCAT(bk.judul SEPARATOR ', ') as buku_list
+    FROM borrowings b
+    JOIN users u ON b.user_id = u.id
+    LEFT JOIN borrowing_details bd ON b.id = bd.borrowing_id
+    LEFT JOIN books bk ON bd.book_id = bk.id
+    $where
+    GROUP BY b.id
+    ORDER BY b.tanggal_pinjam DESC, b.id DESC
+");
 
-    if (empty($kode) || empty($nama)) {
-        $error = 'Kode dan nama kategori wajib diisi.';
-    } else {
-        $cek = mysqli_query($conn, "SELECT id FROM categories WHERE kode='$kode' AND id!=$id");
-        if (mysqli_num_rows($cek) > 0) {
-            $error = 'Kode kategori sudah dipakai kategori lain.';
-        } else {
-            mysqli_query($conn, "UPDATE categories SET kode='$kode', nama='$nama', deskripsi='$deskripsi' WHERE id=$id");
-            header("Location: index.php?msg=" . urlencode('Kategori berhasil diperbarui.'));
-            exit;
-        }
-    }
-}
+$total = mysqli_num_rows($data);
+$isAdmin = ($_SESSION['role_id'] ?? 0) == 1; // Sesuaikan dengan session yang ada
 ?>
+
 <!DOCTYPE html>
 <html lang="id">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Edit Kategori — LITERA</title>
+    <title>Peminjamam</title>
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
     *,
@@ -218,14 +213,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         flex: 1
     }
 
-    .alert.err {
+    .alert {
         padding: 12px 18px;
         border-radius: 10px;
         font-size: .875rem;
         margin-bottom: 20px;
         display: flex;
         align-items: center;
-        gap: 8px;
+        gap: 8px
+    }
+
+    .ok {
+        background: #F0FDF4;
+        border: 1px solid #BBF7D0;
+        color: #16A34A
+    }
+
+    .err {
         background: #FEF2F2;
         border: 1px solid #FECACA;
         color: var(--red)
@@ -237,7 +241,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         padding: 28px 32px;
         border: 1px solid #E2ECF8;
         box-shadow: 0 2px 12px rgba(30, 58, 95, .06);
-        max-width: 680px
+        margin-bottom: 28px
     }
 
     .form-card h2 {
@@ -247,9 +251,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         margin-bottom: 20px
     }
 
-    .grid2 {
+    .grid4 {
         display: grid;
-        grid-template-columns: 1fr 1fr;
+        grid-template-columns: 1fr 1fr 1fr 1fr;
         gap: 16px
     }
 
@@ -259,8 +263,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         gap: 5px
     }
 
-    .fg.full {
-        grid-column: span 2
+    .fg.full4 {
+        grid-column: span 4
     }
 
     label {
@@ -272,6 +276,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     input[type=text],
+    input[type=number],
     textarea {
         padding: 11px 14px;
         border: 2px solid #C7D8F8;
@@ -293,13 +298,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     textarea {
         resize: vertical;
-        min-height: 100px
-    }
-
-    .form-actions {
-        display: flex;
-        gap: 12px;
-        margin-top: 20px
+        min-height: 80px
     }
 
     .btn-primary {
@@ -320,18 +319,169 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         transform: translateY(-1px)
     }
 
-    .btn-cancel {
-        padding: 11px 22px;
-        background: #F1F5F9;
-        color: var(--navy);
-        border: 1px solid #D1DCF8;
-        border-radius: 10px;
+    .table-card {
+        background: #fff;
+        border-radius: 16px;
+        border: 1px solid #E2ECF8;
+        box-shadow: 0 2px 12px rgba(30, 58, 95, .06);
+        overflow: hidden
+    }
+
+    .table-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 20px 28px;
+        border-bottom: 1px solid #F1F5F9;
+        flex-wrap: wrap;
+        gap: 12px
+    }
+
+    .table-head h2 {
+        font-size: 1.05rem;
+        font-weight: 800;
+        color: var(--navy)
+    }
+
+    .search-form {
+        display: flex;
+        gap: 8px
+    }
+
+    .search-form input {
+        padding: 9px 14px;
+        border: 2px solid #C7D8F8;
+        border-radius: 9px;
         font-family: 'Nunito', sans-serif;
-        font-size: .88rem;
-        font-weight: 600;
+        font-size: .85rem;
+        color: var(--navy);
+        outline: none;
+        width: 220px
+    }
+
+    .search-form input:focus {
+        border-color: var(--blue-dark)
+    }
+
+    .search-form button {
+        padding: 9px 18px;
+        background: var(--blue-dark);
+        color: #fff;
+        border: none;
+        border-radius: 9px;
+        cursor: pointer;
+        font-size: .85rem;
+        font-weight: 700;
+        font-family: 'Nunito', sans-serif
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse
+    }
+
+    th {
+        padding: 12px 18px;
+        text-align: left;
+        font-size: .72rem;
+        font-weight: 700;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: .5px;
+        border-bottom: 2px solid #F1F5F9;
+        background: #FAFBFF
+    }
+
+    td {
+        padding: 13px 18px;
+        font-size: .86rem;
+        color: var(--navy);
+        border-bottom: 1px solid #F8FAFC;
+        vertical-align: middle
+    }
+
+    tr:last-child td {
+        border-bottom: none
+    }
+
+    tr:hover td {
+        background: #FAFBFF
+    }
+
+    .badge-lokasi {
+        display: inline-block;
+        padding: 3px 11px;
+        border-radius: 20px;
+        font-size: .72rem;
+        font-weight: 700;
+        background: #F0FDF4;
+        color: #166534;
+        border: 1px solid #BBF7D0
+    }
+
+    .actions {
+        display: flex;
+        gap: 7px
+    }
+
+    .btn-edit {
+        padding: 5px 14px;
+        background: #EFF6FF;
+        color: var(--blue-dark);
+        border: 1px solid #BFDBFE;
+        border-radius: 7px;
+        font-size: .78rem;
+        font-weight: 700;
         text-decoration: none;
-        display: inline-flex;
-        align-items: center
+        transition: background .2s
+    }
+
+    .btn-edit:hover {
+        background: #DBEAFE
+    }
+
+    .btn-del {
+        padding: 5px 12px;
+        background: #FEF2F2;
+        color: var(--red);
+        border: 1px solid #FECACA;
+        border-radius: 7px;
+        font-size: .78rem;
+        font-weight: 700;
+        text-decoration: none;
+        transition: background .2s
+    }
+
+    .btn-del:hover {
+        background: #FEE2E2
+    }
+
+    .empty {
+        text-align: center;
+        padding: 40px;
+        color: var(--muted);
+        font-size: .9rem
+    }
+
+    .bar-wrap {
+        display: flex;
+        align-items: center;
+        gap: 8px
+    }
+
+    .bar-bg {
+        flex: 1;
+        height: 6px;
+        background: #E2E8F0;
+        border-radius: 3px;
+        overflow: hidden;
+        min-width: 80px
+    }
+
+    .bar-fill {
+        height: 100%;
+        border-radius: 3px;
+        transition: width .3s
     }
     </style>
 </head>
@@ -361,7 +511,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </svg>
                 Buku
             </a>
-            <a href="/LITERA-app/modules/categories-racks/category/index.php" class="nav-item active">
+            <a href="/LITERA-app/modules/categories-racks/category/index.php" class="nav-item">
                 <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                     <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
                 </svg>
@@ -376,7 +526,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 Rak Buku
             </a>
             <div class="nav-group-label">Transaksi</div>
-            <a href="/LITERA-app/modules/borrowings/index.php" class="nav-item">
+            <a href="/LITERA-app/modules/borrowings/index.php" class="nav-item active">
                 <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
                     <polyline points="14 2 14 8 20 8" />
@@ -411,6 +561,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </svg>
                 Pengguna
             </a>
+            <a href="reports.php" class="nav-item <?= $cur==='reports.php'?'active':'' ?>">
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <line x1="18" y1="20" x2="18" y2="10" />
+                    <line x1="12" y1="20" x2="12" y2="4" />
+                    <line x1="6" y1="20" x2="6" y2="14" />
+                </svg>
+                Laporan
+            </a>
             <?php endif; ?>
         </nav>
         <div class="sidebar-footer">
@@ -427,36 +585,56 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     <main class="main">
         <div class="page-header">
-            <h1>Edit Kategori</h1>
-            <p>Perbarui data kategori buku.</p>
+            <h1><?= is_admin() ? 'Kelola Peminjaman Buku' : 'Peminjaman Buku' ?></h1>
+            <p><?= is_admin() ? 'Kelola semua peminjaman buku dari pengguna perpustakaan.' : 'Daftar peminjaman buku Anda.' ?>
+            </p>
         </div>
         <div class="content">
-            <?php if ($error): ?><div class="alert err">⚠️ <?= htmlspecialchars($error) ?></div><?php endif; ?>
-            <div class="form-card">
-                <h2>✏️ Edit: <?= htmlspecialchars($category['nama']) ?></h2>
-                <form method="POST">
-                    <div class="grid2">
-                        <div class="fg">
-                            <label>Kode Kategori</label>
-                            <input type="text" name="kode" required
-                                value="<?= htmlspecialchars($_POST['kode'] ?? $category['kode']) ?>">
-                        </div>
-                        <div class="fg">
-                            <label>Nama Kategori</label>
-                            <input type="text" name="nama" required
-                                value="<?= htmlspecialchars($_POST['nama'] ?? $category['nama']) ?>">
-                        </div>
-                        <div class="fg full">
-                            <label>Deskripsi</label>
-                            <textarea
-                                name="deskripsi"><?= htmlspecialchars($_POST['deskripsi'] ?? $category['deskripsi']) ?></textarea>
-                        </div>
-                    </div>
-                    <div class="form-actions">
-                        <button type="submit" class="btn-primary">💾 Simpan Perubahan</button>
-                        <a href="index.php" class="btn-cancel">✕ Batal</a>
-                    </div>
-                </form>
+            <?php if ($msg):  ?><div class="alert ok">✅ <?= htmlspecialchars($msg)   ?></div><?php endif; ?>
+            <?php if ($error):?><div class="alert err">⚠️ <?= htmlspecialchars($error) ?></div><?php endif; ?>
+
+            <?php if (is_admin()): ?>
+            <div style="margin-bottom: 20px; display: flex; justify-content: flex-end;">
+                <a href="create.php" class="btn-primary">+ Tambah Peminjaman</a>
+            </div>
+            <?php endif; ?>
+            <div class="table-card">
+                <div class="table-head">
+                    <h2>Daftar Peminjaman Buku</h2>
+                    <form method="GET" class="search-form">
+                        <input type="text" name="q" placeholder="Cari kode, nama anggota, atau judul buku..." value="<?= htmlspecialchars($search) ?>">
+                        <button type="submit">Cari</button>
+                    </form>
+                </div>
+                <!-- Tampilkan tabel peminjaman -->
+                <?php if ($total > 0): ?>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Kode Pinjam</th>
+                            <th>Nama Anggota</th>
+                            <th>Judul Buku</th>
+                            <th>Tanggal Pinjam</th>
+                            <th>Status</th>
+                            <th>Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php while($row = mysqli_fetch_assoc($data)): ?>
+                        <tr>
+                            <td><?= htmlspecialchars($row['kode_pinjam']) ?></td>
+                            <td><?= htmlspecialchars($row['nama_user']) ?></td>
+                            <td><?= htmlspecialchars($row['buku_list']) ?></td>
+                            <td><?= date('d M Y', strtotime($row['tanggal_pinjam'])) ?></td>
+                            <td><?= htmlspecialchars(ucfirst($row['status'])) ?></td>
+                            <td><a href="detail.php?id=<?= $row['id'] ?>" class="btn-edit">Detail</a></td>
+                        </tr>
+                        <?php endwhile; ?>
+                    </tbody>
+                </table>
+                <?php else: ?> 
+                <div class="empty">Tidak ada data peminjaman yang ditemukan.</div>
+                <?php endif; ?>
             </div>
         </div>
     </main>
