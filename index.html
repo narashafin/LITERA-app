@@ -1,36 +1,45 @@
 <?php
-require_once '../../../includes/config.php';
-require_once '../../../includes/auth_helper.php';
-require_login();
+require_once __DIR__ . '/../../../includes/config.php';
+require_once __DIR__ . '/../../../includes/auth_helper.php';
+require_admin();
 
-$msg   = $_GET['msg']   ?? '';
-$error = $_GET['error'] ?? '';
+if (!isset($_GET['id'])) { header("Location: index.php"); exit; }
 
-$search = trim($_GET['q'] ?? '');
-$sq     = mysqli_real_escape_string($conn, $search);
-$where  = $search ? "WHERE r.nama LIKE '%$sq%' OR r.kode_rak LIKE '%$sq%' OR r.lokasi LIKE '%$sq%'" : '';
+$id   = (int)$_GET['id'];
+$res  = mysqli_query($conn, "SELECT * FROM racks WHERE id=$id LIMIT 1");
+$rack = mysqli_fetch_assoc($res);
+if (!$rack) { header("Location: index.php"); exit; }
 
-$data = mysqli_query($conn,
-    "SELECT r.*, COUNT(b.id) AS total_buku
-     FROM racks r
-     LEFT JOIN books b ON r.id = b.rack_id
-     $where
-     GROUP BY r.id
-     ORDER BY r.kode_rak ASC"
-);
-$total = mysqli_num_rows($data);
-?>
+$error = '';
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $kode_rak  = mysqli_real_escape_string($conn, trim($_POST['kode_rak']  ?? ''));
+    $nama      = mysqli_real_escape_string($conn, trim($_POST['nama']      ?? ''));
+    $lokasi    = mysqli_real_escape_string($conn, trim($_POST['lokasi']    ?? ''));
+    $kapasitas = (int)($_POST['kapasitas'] ?? 50);
+    $deskripsi = mysqli_real_escape_string($conn, trim($_POST['deskripsi'] ?? ''));
+
+    if (empty($kode_rak) || empty($nama)) {
+        $error = 'Kode rak dan nama rak wajib diisi.';
+    } else {
+        $cek = mysqli_query($conn, "SELECT id FROM racks WHERE kode_rak='$kode_rak' AND id!=$id");
+        if (mysqli_num_rows($cek) >
+0) { $error = 'Kode rak sudah dipakai rak lain.'; } else { mysqli_query($conn,
+"UPDATE racks SET kode_rak='$kode_rak', nama='$nama', lokasi='$lokasi',
+kapasitas=$kapasitas, deskripsi='$deskripsi' WHERE id=$id" ); header("Location:
+index.php?msg=" . urlencode('Rak buku berhasil diperbarui.')); exit; } } } ?>
+
 <!doctype html>
 <html lang="id">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Kelola Rak Buku — Litera</title>
+    <title>Edit Rak Buku — LITERA</title>
     <link
       href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="/LITERA-app/assets/css/rack.css" />
+    <link rel="stylesheet" href="/LITERA-app/assets/css/rack-edit.css" />
   </head>
   <body>
     <aside class="sidebar">
@@ -181,24 +190,6 @@ $total = mysqli_num_rows($data);
           </svg>
           Pengguna
         </a>
-        <a
-          href="reports.php"
-          class="nav-item <?= $cur==='reports.php'?'active':'' ?>"
-        >
-          <svg
-            width="16"
-            height="16"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            viewBox="0 0 24 24"
-          >
-            <line x1="18" y1="20" x2="18" y2="10" />
-            <line x1="12" y1="20" x2="12" y2="4" />
-            <line x1="6" y1="20" x2="6" y2="14" />
-          </svg>
-          Laporan
-        </a>
         <?php endif; ?>
       </nav>
       <div class="sidebar-footer">
@@ -222,29 +213,24 @@ $total = mysqli_num_rows($data);
 
     <main class="main">
       <div class="page-header">
-        <h1><?= is_admin() ? 'Kelola Rak Buku' : 'Rak Buku' ?></h1>
-        <p>
-          <?= is_admin() ? 'Tambah, edit, dan hapus data rak penyimpanan buku
-          perpustakaan.' : 'Daftar rak buku yang tersedia di perpustakaan.' ?>
-        </p>
+        <h1>Edit Rak Buku</h1>
+        <p>Perbarui data rak penyimpanan buku.</p>
       </div>
       <div class="content">
-        <?php if ($msg): ?>
-        <div class="alert ok">✅ <?= htmlspecialchars($msg) ?></div>
-        <?php endif; ?> <?php if ($error):?>
+        <?php if ($error): ?>
         <div class="alert err">⚠️ <?= htmlspecialchars($error) ?></div>
-        <?php endif; ?> <?php if (is_admin()): ?>
+        <?php endif; ?>
         <div class="form-card">
-          <h2>+ Tambah Rak Buku Baru</h2>
-          <form method="POST" action="create.php">
+          <h2>Edit: <?= htmlspecialchars($rack['nama']) ?></h2>
+          <form method="POST">
             <div class="grid4">
               <div class="fg">
                 <label>Kode Rak</label>
                 <input
                   type="text"
                   name="kode_rak"
-                  placeholder="Contoh: RAK-A1"
                   required
+                  value="<?= htmlspecialchars($_POST['kode_rak'] ?? $rack['kode_rak']) ?>"
                 />
               </div>
               <div class="fg">
@@ -252,8 +238,8 @@ $total = mysqli_num_rows($data);
                 <input
                   type="text"
                   name="nama"
-                  placeholder="Contoh: Rak Fiksi A"
                   required
+                  value="<?= htmlspecialchars($_POST['nama'] ?? $rack['nama']) ?>"
                 />
               </div>
               <div class="fg">
@@ -261,130 +247,35 @@ $total = mysqli_num_rows($data);
                 <input
                   type="text"
                   name="lokasi"
-                  placeholder="Contoh: Lantai 1"
+                  value="<?= htmlspecialchars($_POST['lokasi'] ?? $rack['lokasi']) ?>"
                 />
               </div>
               <div class="fg">
                 <label>Kapasitas</label>
-                <input type="number" name="kapasitas" value="50" min="1" />
+                <input
+                  type="number"
+                  name="kapasitas"
+                  min="1"
+                  value="<?= htmlspecialchars($_POST['kapasitas'] ?? $rack['kapasitas']) ?>"
+                />
               </div>
               <div class="fg full4">
                 <label>Deskripsi</label>
-                <textarea
-                  name="deskripsi"
-                  placeholder="Deskripsi singkat rak (opsional)"
-                ></textarea>
+                <textarea name="deskripsi">
+<?= htmlspecialchars($_POST['deskripsi'] ?? $rack['deskripsi']) ?></textarea
+                >
               </div>
             </div>
-            <div style="margin-top: 20px">
-              <button type="submit" class="btn-primary">+ Tambah Rak</button>
+            <div class="form-actions">
+              <button type="submit" class="btn-primary">
+                Simpan Perubahan
+              </button>
+              <a href="index.php" class="btn-cancel">✕ Batal</a>
             </div>
           </form>
         </div>
-        <?php endif; ?>
-
-        <div class="table-card">
-          <div class="table-head">
-            <h2>Daftar Rak Buku (<?= $total ?>)</h2>
-            <form method="GET" class="search-form">
-              <input
-                type="text"
-                name="q"
-                placeholder="Cari kode / nama / lokasi…"
-                value="<?= htmlspecialchars($search) ?>"
-              />
-              <button type="submit">Cari</button>
-            </form>
-          </div>
-          <table>
-            <thead>
-              <tr>
-                <th>#</th>
-                <th>Kode Rak</th>
-                <th>Nama Rak</th>
-                <th>Lokasi</th>
-                <th>Kapasitas</th>
-                <?php if (is_admin()): ?>
-                <th>Terisi</th>
-                <?php endif; ?> <?php if (is_admin()): ?>
-                <th>Aksi</th>
-                <?php endif; ?>
-              </tr>
-            </thead>
-            <tbody>
-              <?php if ($total === 0): ?>
-              <tr>
-                <td colspan="<?= is_admin() ? 7 : 5 ?>" class="empty">
-                  Tidak ada rak ditemukan.
-                </td>
-              </tr>
-
-              <?php else: $no = 1; while ($row = mysqli_fetch_assoc($data)):
-              $pct = $row['kapasitas'] > 0 ? min(100, round($row['total_buku'] /
-              $row['kapasitas'] * 100)) : 0; $color = $pct >= 90 ? '#EF4444' :
-              ($pct >= 70 ? '#F59E0B' : '#2563EB'); ?>
-
-              <tr>
-                <td><?= $no++ ?></td>
-
-                <td>
-                  <code class="rack-code">
-                    <?= htmlspecialchars($row['kode_rak']) ?>
-                  </code>
-                </td>
-
-                <td class="rack-name"><?= htmlspecialchars($row['nama']) ?></td>
-
-                <td>
-                  <?= $row['lokasi'] ? '<span class="badge-lokasi"
-                    >' . htmlspecialchars($row['lokasi']) . '</span
-                  >' : '-' ?>
-                </td>
-
-                <td>
-                  <?= $row['kapasitas'] ?>
-                  buku
-                </td>
-
-                <?php if (is_admin()): ?>
-                <td>
-                  <div class="bar-wrap">
-                    <span class="bar-count"> <?= $row['total_buku'] ?> </span>
-
-                    <div class="bar-bg">
-                      <div
-                        class="bar-fill"
-                        style="width: <?= $pct ?>%; background: <?= $color ?>"
-                      ></div>
-                    </div>
-
-                    <span class="bar-percent"> <?= $pct ?>% </span>
-                  </div>
-                </td>
-                <?php endif; ?> <?php if (is_admin()): ?>
-                <td>
-                  <div class="actions">
-                    <a href="edit.php?id=<?= $row['id'] ?>" class="btn-edit">
-                      Edit
-                    </a>
-
-                    <a
-                      href="delete.php?id=<?= $row['id'] ?>"
-                      class="btn-del"
-                      onclick="return confirm('Hapus rak &quot;<?= htmlspecialchars($row['nama']) ?>&quot;?')"
-                    >
-                      Hapus
-                    </a>
-                  </div>
-                </td>
-                <?php endif; ?>
-              </tr>
-
-              <?php endwhile; endif; ?>
-            </tbody>
-          </table>
-        </div>
       </div>
     </main>
+    <script src="/LITERA-app/assets/sidebar-drag.js"></script>
   </body>
 </html>
