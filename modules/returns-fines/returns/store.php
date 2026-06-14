@@ -1,4 +1,8 @@
 <?php
+
+ini_set('display_errors', 1);
+error_reporting(E_ALL);
+
 require_once __DIR__ . '/../../../includes/config.php';
 require_once __DIR__ . '/../../../includes/auth_helper.php';
 require_admin();
@@ -46,7 +50,7 @@ try {
     exit();
 
 } catch (Exception $e) {
-    if (isset($db)) $db->rollBack();
-    header('Location: index.php?error=' . urlencode($e->getMessage()));
+    echo "ERROR DEBUG: " . $e->getMessage();
+    echo "<br>FILE: " . $e->getFile() . " LINE: " . $e->getLine();
     exit();
 }

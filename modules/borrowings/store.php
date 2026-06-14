@@ -1,6 +1,6 @@
 <?php
-require_once '../../../includes/config.php';
-require_once '../../../includes/auth_helper.php';
+require_once '../../includes/config.php';
+require_once '../../includes/auth_helper.php';
 require_login();
 
 if (($_SESSION['role_id'] ?? 0) != 1) {
@@ -19,8 +19,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit();
     }
 
-    // Generate kode pinjam
-    $kode_pinjam = 'PIN-' . date('YmdHis') . rand(10,99);
+    // Generate kode pinjam dengan format PJM001, PJM002, dst.
+    $last = mysqli_fetch_assoc(mysqli_query($conn,
+        "SELECT kode_pinjam FROM borrowings WHERE kode_pinjam LIKE 'PJM%' ORDER BY id DESC LIMIT 1"));
+    $last_num = $last ? intval(substr($last['kode_pinjam'], 3)) : 0;
+    $kode_pinjam = 'PJM' . str_pad($last_num + 1, 3, '0', STR_PAD_LEFT);
 
     $query = "INSERT INTO borrowings (kode_pinjam, user_id, admin_id, tanggal_pinjam, tanggal_kembali, status, catatan) 
               VALUES ('$kode_pinjam', $user_id, {$_SESSION['user_id']}, '$tanggal_pinjam', 

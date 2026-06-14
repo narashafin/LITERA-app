@@ -90,7 +90,7 @@ if (!$is_admin) {
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Dashboard — LITERA</title>
+<title>Dashboard LITERA</title>
 <?php if ($is_admin): ?>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <?php endif; ?>
@@ -470,7 +470,7 @@ require_once __DIR__ . '/includes/sidebar.php';
         <div class="greeting">Hallo</div>
         <h1>Welcome, <?= htmlspecialchars($user['nama']) ?>!</h1>
         <span class="role-badge <?= $is_admin ? 'admin' : '' ?>">
-            <?= $is_admin ? '⚙ Administrator' : '📚 Member' ?>
+            <?= $is_admin ? 'Administrator' : 'Member' ?>
         </span>
     </div>
 

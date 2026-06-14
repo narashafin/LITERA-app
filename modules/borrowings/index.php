@@ -29,6 +29,17 @@ $data = mysqli_query($conn, "
     ORDER BY b.tanggal_pinjam DESC, b.id DESC
 ");
 
+// Ambil detail buku per peminjaman (untuk modal detail)
+$detail_books = [];
+$detail_res = mysqli_query($conn, "
+    SELECT bd.borrowing_id, bk.judul, bk.penulis, bd.jumlah
+    FROM borrowing_details bd
+    JOIN books bk ON bd.book_id = bk.id
+");
+while ($d = mysqli_fetch_assoc($detail_res)) {
+    $detail_books[$d['borrowing_id']][] = $d;
+}
+
 $total = mysqli_num_rows($data);
 $isAdmin = ($_SESSION['role_id'] ?? 0) == 1; // Sesuaikan dengan session yang ada
 ?>
@@ -490,6 +501,137 @@ $isAdmin = ($_SESSION['role_id'] ?? 0) == 1; // Sesuaikan dengan session yang ad
         border-radius: 3px;
         transition: width .3s
     }
+
+    /* Modal Detail */
+    .modal-overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(30, 58, 95, .45);
+        z-index: 200;
+        align-items: center;
+        justify-content: center;
+        padding: 16px
+    }
+
+    .modal-overlay.show {
+        display: flex
+    }
+
+    .modal {
+        background: #fff;
+        border-radius: 20px;
+        padding: 28px 30px;
+        width: 100%;
+        max-width: 520px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, .2);
+        max-height: 90vh;
+        overflow-y: auto
+    }
+
+    .modal h2 {
+        font-size: 1.15rem;
+        font-weight: 800;
+        color: var(--navy);
+        margin-bottom: 2px
+    }
+
+    .modal .modal-sub {
+        font-size: .8rem;
+        color: var(--muted);
+        margin-bottom: 18px
+    }
+
+    .detail-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 12px;
+        padding: 9px 0;
+        border-bottom: 1px solid #F1F5F9;
+        font-size: .86rem
+    }
+
+    .detail-row:last-child {
+        border-bottom: none
+    }
+
+    .detail-row .label {
+        color: var(--muted);
+        font-weight: 600;
+        flex-shrink: 0
+    }
+
+    .detail-row .value {
+        color: var(--navy);
+        font-weight: 700;
+        text-align: right
+    }
+
+    .detail-books {
+        margin-top: 6px
+    }
+
+    .detail-book-item {
+        background: #FAFBFF;
+        border: 1px solid #F1F5F9;
+        border-radius: 10px;
+        padding: 10px 14px;
+        margin-bottom: 8px;
+        font-size: .85rem
+    }
+
+    .detail-book-item .judul {
+        font-weight: 700;
+        color: var(--navy)
+    }
+
+    .detail-book-item .penulis {
+        color: var(--muted);
+        font-size: .78rem;
+        margin-top: 2px
+    }
+
+    .status-pill {
+        display: inline-block;
+        padding: 3px 12px;
+        border-radius: 20px;
+        font-size: .75rem;
+        font-weight: 700
+    }
+
+    .status-dipinjam {
+        background: #DBEAFE;
+        color: #1D4ED8
+    }
+
+    .status-dikembalikan {
+        background: #DCFCE7;
+        color: #166534
+    }
+
+    .status-terlambat {
+        background: #FEE2E2;
+        color: #991B1B
+    }
+
+    .modal-close {
+        margin-top: 20px;
+        width: 100%;
+        padding: 11px;
+        background: #F1F5F9;
+        color: var(--navy);
+        border: none;
+        border-radius: 10px;
+        font-family: 'Nunito', sans-serif;
+        font-size: .88rem;
+        font-weight: 700;
+        cursor: pointer
+    }
+
+    .modal-close:hover {
+        background: #E2E8F0
+    }
     </style>
 </head>
 
@@ -542,7 +684,16 @@ require_once __DIR__ . '/../../includes/sidebar.php';
                             <td><?= htmlspecialchars($row['buku_list']) ?></td>
                             <td><?= date('d M Y', strtotime($row['tanggal_pinjam'])) ?></td>
                             <td><?= htmlspecialchars(ucfirst($row['status'])) ?></td>
-                            <td><a href="detail.php?id=<?= $row['id'] ?>" class="btn-edit">Detail</a></td>
+                            <td><button type="button" class="btn-edit" style="border:1px solid #BFDBFE;cursor:pointer" onclick='openDetail(<?= json_encode([
+                                "kode_pinjam"    => $row['kode_pinjam'],
+                                "nama_user"      => $row['nama_user'],
+                                "username"       => $row['username'],
+                                "tanggal_pinjam" => $row['tanggal_pinjam'],
+                                "tanggal_kembali"=> $row['tanggal_kembali'],
+                                "status"         => $row['status'],
+                                "catatan"        => $row['catatan'],
+                                "books"          => $detail_books[$row['id']] ?? []
+                            ], JSON_HEX_APOS | JSON_HEX_QUOT) ?>)'>Detail</button></td>
                         </tr>
                         <?php endwhile; ?>
                     </tbody>
@@ -553,6 +704,98 @@ require_once __DIR__ . '/../../includes/sidebar.php';
             </div>
         </div>
     </main>
+
+    <!-- Modal Detail Peminjaman -->
+    <div class="modal-overlay" id="modalDetail" onclick="if(event.target===this) closeDetail()">
+        <div class="modal">
+            <h2 id="dKodePinjam"></h2>
+            <p class="modal-sub">Detail informasi peminjaman buku</p>
+
+            <div class="detail-row">
+                <span class="label">Peminjam</span>
+                <span class="value" id="dNamaUser"></span>
+            </div>
+            <div class="detail-row">
+                <span class="label">Tanggal Pinjam</span>
+                <span class="value" id="dTglPinjam"></span>
+            </div>
+            <div class="detail-row">
+                <span class="label">Tanggal Kembali</span>
+                <span class="value" id="dTglKembali"></span>
+            </div>
+            <div class="detail-row">
+                <span class="label">Status</span>
+                <span class="value" id="dStatus"></span>
+            </div>
+            <div class="detail-row" id="dCatatanRow" style="display:none">
+                <span class="label">Catatan</span>
+                <span class="value" id="dCatatan"></span>
+            </div>
+
+            <div class="detail-books">
+                <div class="label" style="font-size:.76rem;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.4px;margin:14px 0 8px">Daftar Buku</div>
+                <div id="dBooksList"></div>
+            </div>
+
+            <button type="button" class="modal-close" onclick="closeDetail()">Tutup</button>
+        </div>
+    </div>
+
+    <script>
+    function openDetail(data) {
+        document.getElementById('dKodePinjam').textContent = 'Detail Peminjaman #' + data.kode_pinjam;
+        document.getElementById('dNamaUser').textContent = data.nama_user + (data.username ? ' (' + data.username + ')' : '');
+
+        const opts = { day: '2-digit', month: 'short', year: 'numeric' };
+        document.getElementById('dTglPinjam').textContent = new Date(data.tanggal_pinjam).toLocaleDateString('id-ID', opts);
+        document.getElementById('dTglKembali').textContent = new Date(data.tanggal_kembali).toLocaleDateString('id-ID', opts);
+
+        const statusMap = {
+            'dipinjam': ['status-dipinjam', 'Dipinjam'],
+            'dikembalikan': ['status-dikembalikan', 'Dikembalikan'],
+            'terlambat': ['status-terlambat', 'Terlambat']
+        };
+        const st = statusMap[data.status] || ['status-dipinjam', data.status];
+        document.getElementById('dStatus').innerHTML = '<span class="status-pill ' + st[0] + '">' + st[1] + '</span>';
+
+        const catatanRow = document.getElementById('dCatatanRow');
+        if (data.catatan && data.catatan.trim() !== '') {
+            document.getElementById('dCatatan').textContent = data.catatan;
+            catatanRow.style.display = 'flex';
+        } else {
+            catatanRow.style.display = 'none';
+        }
+
+        const list = document.getElementById('dBooksList');
+        list.innerHTML = '';
+        if (data.books.length === 0) {
+            list.innerHTML = '<div style="color:#94A3B8;font-size:.85rem">Tidak ada data buku.</div>';
+        } else {
+            data.books.forEach(b => {
+                const item = document.createElement('div');
+                item.className = 'detail-book-item';
+
+                const judulDiv = document.createElement('div');
+                judulDiv.className = 'judul';
+                judulDiv.textContent = b.judul + ' × ' + b.jumlah;
+
+                const penulisDiv = document.createElement('div');
+                penulisDiv.className = 'penulis';
+                penulisDiv.textContent = b.penulis;
+
+                item.appendChild(judulDiv);
+                item.appendChild(penulisDiv);
+                list.appendChild(item);
+            });
+        }
+
+        document.getElementById('modalDetail').classList.add('show');
+    }
+
+    function closeDetail() {
+        document.getElementById('modalDetail').classList.remove('show');
+    }
+    </script>
     <script src="/LITERA-app/assets/sidebar-drag.js"></script>
 </body>
 

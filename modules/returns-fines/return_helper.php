@@ -89,11 +89,11 @@ class ReturnHelper {
      * Mengambil semua detail peminjaman (multiple books)
      */
     public function getAllBorrowingDetails($borrowing_id) {
-        $query = $this->db->prepare("
-            SELECT bd.id, bd.borrowing_id, bd.book_id, bd.jumlah
-            FROM borrowing_details 
-            WHERE borrowing_id = ?
-        ");
+    $query = $this->db->prepare("
+        SELECT bd.id, bd.borrowing_id, bd.book_id, bd.jumlah
+        FROM borrowing_details bd
+        WHERE borrowing_id = ?
+    ");
         $query->execute([$borrowing_id]);
         $details = $query->fetchAll(PDO::FETCH_ASSOC);
         

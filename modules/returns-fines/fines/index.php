@@ -57,7 +57,7 @@ $count_belum = mysqli_fetch_row(mysqli_query($conn,
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Denda — LITERA</title>
+<title>Denda LITERA</title>
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -80,6 +80,7 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);min-height:100vh;displ
 .page-header{padding:20px 32px 18px;background:#fff;border-bottom:1px solid #E2E8F0}
 .greeting{font-size:.85rem;color:var(--muted);font-weight:500}
 .page-header h1{font-size:1.35rem;font-weight:800;color:var(--navy)}
+.page-header p{font-size:.85rem;color:var(--muted);margin-top:3px}
 .content{padding:28px 32px;flex:1}
 .alert{padding:12px 18px;border-radius:10px;font-size:.875rem;margin-bottom:20px;display:flex;align-items:center;gap:8px}
 .ok{background:#F0FDF4;border:1px solid #BBF7D0;color:#16A34A}
@@ -120,8 +121,8 @@ require_once __DIR__ . '/../../../includes/sidebar.php';
 ?>
 <main class="main">
     <div class="page-header">
-        <div class="greeting">Hallo</div>
-        <h1>Welcome, <?= htmlspecialchars($_SESSION['nama'] ?? 'Admin') ?>!</h1>
+        <h1>Kelola Denda</h1>
+        <p>Kelola dan pantau status denda keterlambatan pengembalian buku.</p>
     </div>
 
     <div class="content">
