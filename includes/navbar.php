@@ -22,7 +22,7 @@ $cur  = basename($_SERVER['PHP_SELF']);
         <?= htmlspecialchars($user['nama_role']) ?>
       </span>
     </div>
-    <a href="../auth/logout.php" class="btn-logout">Logout</a>
+    <a href="/LITERA-app/modules/users-auth/logout.php" class="btn-logout">Logout</a>
   </div>
 </nav>
 <style>

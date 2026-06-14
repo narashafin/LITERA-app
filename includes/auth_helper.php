@@ -2,7 +2,7 @@
 // includes/auth_helper.php
 
 function is_logged_in(): bool {
-    return isset($_SESSION['logged_in']) && $_SESSION['logged_in'] === true;
+    return isset($_SESSION['user_id']);
 }
 
 function require_login(): void {

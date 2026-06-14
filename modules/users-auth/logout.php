@@ -1,6 +1,6 @@
 <?php
-// auth/logout.php
-require_once '../includes/config.php';
+// users-auth/logout.php
+require_once '../../includes/config.php';
 
 $_SESSION = [];
 
@@ -11,5 +11,5 @@ if (ini_get('session.use_cookies')) {
 }
 
 session_destroy();
-header('Location: ../auth/login.php?logout=1');
+header('Location: /LITERA-app/modules/users-auth/login.php?logout=1');
 exit();

@@ -151,38 +151,11 @@ $isAdmin = ($_SESSION['role_id'] ?? 0) == 1; // Sesuaikan dengan session yang ad
 </head>
 <body>
 
-<!-- SIDEBAR -->
-<div class="sidebar">
-    <div class="logo">
-        <div class="logo-text">LITERA</div>
-    </div>
+<?php
+$active_page = 'borrowings';
+require_once __DIR__ . '/../../includes/sidebar.php';
+?>
 
-    <div class="nav-group">
-        <div class="nav-group-label">MAIN</div>
-        <a href="/LITERA-app/dashboard.php" class="nav-item">Dashboard</a>
-    </div>
-
-    <div class="nav-group">
-        <div class="nav-group-label">KOLEKSI</div>
-        <a href="/LITERA-app/modules/books/index.php" class="nav-item">Buku</a>
-        <a href="/LITERA-app/modules/categories-racks/category/index.php" class="nav-item">Kategori</a>
-        <a href="/LITERA-app/modules/categories-racks/rack/index.php" class="nav-item">Rak Buku</a>
-    </div>
-
-    <div class="nav-group">
-        <div class="nav-group-label">TRANSAKSI</div>
-        <a href="/LITERA-app/modules/borrowings/index.php" class="nav-item active">Peminjaman</a>
-        <a href="/LITERA-app/modules/returns/index.php" class="nav-item">Pengembalian</a>
-        <a href="/LITERA-app/modules/fines/index.php" class="nav-item">Denda</a>
-    </div>
-
-    <?php if ($isAdmin): ?>
-    <div class="nav-group">
-        <div class="nav-group-label">MANAJEMEN</div>
-        <a href="/LITERA-app/pages/users.php" class="nav-item">Pengguna</a>
-    </div>
-    <?php endif; ?>
-</div>
 
 <!-- MAIN CONTENT -->
 <div class="main-content">

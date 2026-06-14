@@ -125,7 +125,7 @@ class ReturnHelper {
         try {
             $query = $this->db->prepare("
                 UPDATE books 
-                SET stok_tersedia = stok_tersedia + ? 
+                SET stok = stok + ? 
                 WHERE id = ?
             ");
             return $query->execute([$jumlah, $book_id]);
@@ -155,7 +155,7 @@ class ReturnHelper {
         try {
             $query = $this->db->prepare("
                 UPDATE borrowings 
-                SET status = 'kembali'
+                SET status = 'dikembalikan'
                 WHERE id = ?
             ");
             return $query->execute([$borrowing_id]);
