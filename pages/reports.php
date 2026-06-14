@@ -69,10 +69,11 @@ $active_page = 'reports';
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Laporan — LITERA</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
-<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/LITERA-app/assets/app.css">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
+
 /* ── Styles khusus halaman Laporan ── */
 
 /* Stats Grid */
@@ -157,8 +158,6 @@ $active_page = 'reports';
 <body>
 
 <?php
-// ─── Include sidebar reusable ─────────────────────────────────
-// Path dari pages/ naik ke root, lalu masuk includes/
 require_once __DIR__ . '/../includes/sidebar.php';
 ?>
 
