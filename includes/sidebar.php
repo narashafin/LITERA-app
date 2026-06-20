@@ -1,6 +1,6 @@
 <?php
 
-// Pastikan $active_page terdefinisi supaya tidak error
+//$active_page 
 if (!isset($active_page)) {
     $active_page = '';
 }
@@ -15,11 +15,11 @@ function nav_active(string $page): string {
 $_sidebar_is_admin = function_exists('is_admin') ? is_admin() : false;
 ?>
 
-<!-- ═══════════════════════════════════════════
-     TOMBOL HAMBURGER — hanya tampil di mobile
-     ═══════════════════════════════════════════ -->
+
+<!-- TOMBOL HAMBURGER (mobile ver) -->
+
 <button class="hamburger-btn" id="hamburgerBtn" aria-label="Buka menu">
-    <!-- Icon ☰ (tiga garis) -->
+    <!-- Icon ☰ -->
     <svg id="iconOpen" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5"
          stroke-linecap="round" viewBox="0 0 24 24">
         <line x1="3" y1="6"  x2="21" y2="6"/>
@@ -34,24 +34,15 @@ $_sidebar_is_admin = function_exists('is_admin') ? is_admin() : false;
     </svg>
 </button>
 
-<!-- Overlay gelap di belakang sidebar saat mobile -->
 <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
-<!-- ═══════════════════════════════════════════
-     SIDEBAR UTAMA
-     ═══════════════════════════════════════════ -->
 <aside class="sidebar" id="mainSidebar">
 
-    <!-- Logo -->
     <div class="sidebar-logo">
         <img src="/LITERA-app/assets/LITERA.png" alt="LITERA Logo">
         <span class="logo-text">LITERA</span>
     </div>
-
-    <!-- Navigasi -->
     <nav class="sidebar-nav">
-
-        <!-- ── MAIN ── -->
         <div class="nav-group-label">Main</div>
         <a href="/LITERA-app/dashboard.php" class="nav-item<?= nav_active('dashboard') ?>">
             <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -63,7 +54,6 @@ $_sidebar_is_admin = function_exists('is_admin') ? is_admin() : false;
             Dashboard
         </a>
 
-        <!-- ── KOLEKSI ── -->
         <div class="nav-group-label">Koleksi</div>
         <a href="/LITERA-app/modules/books/index.php" class="nav-item<?= nav_active('books') ?>">
             <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -87,7 +77,6 @@ $_sidebar_is_admin = function_exists('is_admin') ? is_admin() : false;
             Rak Buku
         </a>
 
-        <!-- ── TRANSAKSI ── -->
         <div class="nav-group-label">Transaksi</div>
         <a href="/LITERA-app/modules/borrowings/index.php" class="nav-item<?= nav_active('borrowings') ?>">
             <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -114,7 +103,6 @@ $_sidebar_is_admin = function_exists('is_admin') ? is_admin() : false;
             Denda
         </a>
 
-        <!-- ── MANAJEMEN (admin only) ── -->
         <?php if ($_sidebar_is_admin): ?>
         <div class="nav-group-label">Manajemen</div>
         <a href="/LITERA-app/pages/users.php" class="nav-item<?= nav_active('users') ?>">
@@ -137,8 +125,6 @@ $_sidebar_is_admin = function_exists('is_admin') ? is_admin() : false;
         <?php endif; ?>
 
     </nav>
-
-    <!-- Tombol Logout -->
     <div class="sidebar-footer">
         <a href="/LITERA-app/modules/users-auth/logout.php" class="btn-logout">
             <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -151,14 +137,7 @@ $_sidebar_is_admin = function_exists('is_admin') ? is_admin() : false;
     </div>
 </aside>
 
-<!-- ═══════════════════════════════════════════
-     CSS SIDEBAR + RESPONSIVE
-     (taruh di sini supaya tidak perlu duplikat di tiap halaman;
-      kalau kamu sudah include app.css, hapus blok ini
-      dan pindahkan CSS-nya ke app.css)
-     ═══════════════════════════════════════════ -->
 <style>
-/* ── Variabel (jaga-jaga kalau halaman belum define :root) ── */
 :root {
     --sidebar-bg : #C9D8E8;
     --sidebar-w  : 240px;
@@ -169,7 +148,6 @@ $_sidebar_is_admin = function_exists('is_admin') ? is_admin() : false;
     --muted      : #64748B;
 }
 
-/* ── Sidebar base ── */
 .sidebar {
     width         : var(--sidebar-w);
     height        : 100vh;
@@ -183,11 +161,9 @@ $_sidebar_is_admin = function_exists('is_admin') ? is_admin() : false;
     z-index       : 998;
     box-shadow    : 2px 0 16px rgba(30,58,95,.08);
     overflow-y    : auto;
-    /* transisi untuk mobile slide */
     transition    : transform .3s cubic-bezier(.4,0,.2,1);
 }
 
-/* ── Logo ── */
 .sidebar-logo {
     display        : flex;
     flex-direction : column;
@@ -208,7 +184,6 @@ $_sidebar_is_admin = function_exists('is_admin') ? is_admin() : false;
     margin-top  : 4px;
 }
 
-/* ── Nav ── */
 .sidebar-nav { flex:1; padding:16px 0; overflow-y:auto; }
 
 .nav-group-label {
@@ -245,7 +220,6 @@ $_sidebar_is_admin = function_exists('is_admin') ? is_admin() : false;
     border-radius : 0 3px 3px 0;
 }
 
-/* ── Footer / Logout ── */
 .sidebar-footer { padding:0 16px; margin-top:8px; flex-shrink:0; }
 .btn-logout {
     display        : flex;
@@ -266,7 +240,6 @@ $_sidebar_is_admin = function_exists('is_admin') ? is_admin() : false;
 }
 .btn-logout:hover { background:rgba(239,68,68,.22); }
 
-/* ── Hamburger button (mobile) ── */
 .hamburger-btn {
     display        : none; /* hidden di desktop */
     position       : fixed;
@@ -285,7 +258,6 @@ $_sidebar_is_admin = function_exists('is_admin') ? is_admin() : false;
 }
 .hamburger-btn:hover { background:#1d4ed8; transform:scale(1.05); }
 
-/* ── Overlay gelap ── */
 .sidebar-overlay {
     display       : none; /* hidden di desktop */
     position      : fixed;
@@ -299,7 +271,6 @@ $_sidebar_is_admin = function_exists('is_admin') ? is_admin() : false;
 }
 .sidebar-overlay.active { opacity:1; pointer-events:auto; }
 
-/* ── Main content layout ── */
 .main {
     margin-left   : var(--sidebar-w);
     flex          : 1;
@@ -308,27 +279,20 @@ $_sidebar_is_admin = function_exists('is_admin') ? is_admin() : false;
     flex-direction: column;
 }
 
-/* ══════════════════════════════════════════════════════
-   RESPONSIVE — Mobile < 1024px
-   ══════════════════════════════════════════════════════ */
+
 @media (max-width: 1023px) {
-    /* Tampilkan tombol hamburger */
     .hamburger-btn { display:flex; }
 
-    /* Tampilkan overlay */
     .sidebar-overlay { display:block; }
 
-    /* Sidebar masuk ke kiri layar */
     .sidebar {
         transform     : translateX(-100%);
         border-radius : 0 20px 20px 0;
         box-shadow    : 4px 0 24px rgba(0,0,0,.15);
     }
 
-    /* Ketika sidebar aktif (JS toggle class) */
     .sidebar.sidebar-open { transform:translateX(0); }
 
-    /* Main content tidak perlu margin-left di mobile */
     .main {
         margin-left : 0;
         padding-top : 56px; /* ruang untuk tombol hamburger */
@@ -338,8 +302,6 @@ $_sidebar_is_admin = function_exists('is_admin') ? is_admin() : false;
     .page-header { padding:16px 20px 14px; }
     .content     { padding:20px; }
 }
-
-/* ── Breakpoint sangat kecil ── */
 @media (max-width: 480px) {
     .content { padding:16px; }
 }

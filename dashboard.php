@@ -7,9 +7,7 @@ $user    = current_user();
 $user_id = $user['id'];
 $is_admin = is_admin(); // true = admin, false = user biasa
 
-// ══════════════════════════════════════════════════════════════
 //  DATA ADMIN
-// ══════════════════════════════════════════════════════════════
 if ($is_admin) {
     $total_buku      = mysqli_fetch_row(mysqli_query($conn, "SELECT COUNT(*) FROM books"))[0] ?? 0;
     $total_kategori  = mysqli_fetch_row(mysqli_query($conn, "SELECT COUNT(*) FROM categories"))[0] ?? 0;
@@ -50,10 +48,7 @@ if ($is_admin) {
          ORDER BY b.created_at DESC
          LIMIT 5");
 }
-
-// ══════════════════════════════════════════════════════════════
 //  DATA USER
-// ══════════════════════════════════════════════════════════════
 if (!$is_admin) {
     $sedang_dipinjam = mysqli_fetch_row(mysqli_query($conn,
         "SELECT COUNT(*) FROM borrowings WHERE user_id=$user_id AND status='dipinjam'"))[0] ?? 0;
@@ -115,120 +110,6 @@ body {
     min-height: 100vh;
     display: flex;
 }
-
-/* ════ SIDEBAR ════ */
-.sidebar {
-    width: var(--sidebar-w);
-    height: 100vh;
-    background: var(--sidebar-bg);
-    border-radius: 0 24px 24px 0;
-    display: flex;
-    flex-direction: column;
-    padding-bottom: 24px;
-    position: fixed;
-    top: 0; left: 0;
-    z-index: 100;
-    box-shadow: 2px 0 16px rgba(30,58,95,.08);
-    overflow-y: auto;
-}
-
-.sidebar-logo {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 28px 16px 20px;
-    border-bottom: 1px solid rgba(30,58,95,.12);
-}
-
-.sidebar-logo img {
-    width: 90px;
-    height: 90px;
-    object-fit: contain;
-}
-
-.sidebar-logo .logo-text {
-    font-size: 1.25rem;
-    font-weight: 800;
-    letter-spacing: 4px;
-    background: linear-gradient(90deg,#4ecdc4,#45b7d1,#96c93d,#f7971e,#f9d62e);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    margin-top: 4px;
-}
-
-.sidebar-nav {
-    flex: 1;
-    padding: 16px 0;
-    overflow-y: auto;
-}
-
-.nav-group-label {
-    font-size: .68rem;
-    font-weight: 800;
-    color: var(--navy);
-    letter-spacing: 1.4px;
-    text-transform: uppercase;
-    padding: 14px 24px 6px;
-}
-
-.nav-item {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 9px 24px 9px 32px;
-    color: #374151;
-    text-decoration: none;
-    font-size: .875rem;
-    font-weight: 500;
-    border-radius: 0 20px 20px 0;
-    margin-right: 16px;
-    transition: all .2s;
-    position: relative;
-}
-
-.nav-item:hover {
-    background: rgba(37,99,235,.1);
-    color: var(--blue-dark);
-    font-weight: 600;
-}
-
-.nav-item.active {
-    background: #ffffff;
-    color: var(--blue-dark);
-    font-weight: 700;
-    box-shadow: 0 2px 8px rgba(37,99,235,.12);
-}
-
-.nav-item.active::before {
-    content: '';
-    position: absolute;
-    left: 0; top: 6px; bottom: 6px;
-    width: 3px;
-    background: var(--blue-dark);
-    border-radius: 0 3px 3px 0;
-}
-
-.sidebar-footer { padding: 0 16px; margin-top: 8px; }
-
-.btn-logout {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    width: 100%;
-    padding: 10px 16px;
-    background: rgba(239,68,68,.12);
-    color: #DC2626;
-    border: none;
-    border-radius: 12px;
-    font-family: 'Nunito', sans-serif;
-    font-size: .85rem;
-    font-weight: 700;
-    cursor: pointer;
-    text-decoration: none;
-    transition: background .2s;
-}
-.btn-logout:hover { background: rgba(239,68,68,.22); }
 
 /* ════ MAIN ════ */
 .main {
@@ -320,7 +201,6 @@ body {
 .stat-info .num   { font-size: 1.75rem; font-weight: 800; color: var(--navy); line-height: 1; }
 .stat-info .label { font-size: .78rem; color: var(--muted); font-weight: 600; margin-top: 4px; }
 
-/* ── Section Card ── */
 .section-card {
     background: var(--white);
     border-radius: 16px;
@@ -339,10 +219,8 @@ body {
 }
 .section-header h3 { font-size: 1rem; font-weight: 800; color: var(--navy); }
 
-/* ── Chart ── */
 .chart-wrap { height: 220px; padding: 20px 24px; position: relative; }
 
-/* ── Table ── */
 .table-wrap { overflow-x: auto; }
 
 table { width: 100%; border-collapse: collapse; }
@@ -433,10 +311,8 @@ code {
 }
 .book-author { font-size: .75rem; color: var(--muted); font-weight: 500; }
 
-/* ── Bottom Grid (admin) ── */
 .bottom-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
 
-/* ── Responsive ── */
 @media (max-width: 1100px) {
     .bottom-grid { grid-template-columns: 1fr; }
 }
@@ -462,7 +338,7 @@ $active_page = 'dashboard';
 require_once __DIR__ . '/includes/sidebar.php';
 ?>
 
-<!-- ════ MAIN CONTENT ════ -->
+<!-- MAIN CONTENT -->
 <main class="main">
 
     <!-- Page Header -->
@@ -476,12 +352,8 @@ require_once __DIR__ . '/includes/sidebar.php';
 
     <div class="content">
 
-        <!-- ══════════════════════════════════════
-             TAMPILAN ADMIN
-        ══════════════════════════════════════ -->
+        <!-- TAMPILAN ADMIN-->
         <?php if ($is_admin): ?>
-
-        <!-- Stats Grid Admin -->
         <div class="stats-grid cols-3">
 
             <div class="stat-card">
@@ -546,7 +418,6 @@ require_once __DIR__ . '/includes/sidebar.php';
 
         </div>
 
-        <!-- Bottom: Chart + Tabel -->
         <div class="bottom-grid">
 
             <div class="section-card">
@@ -602,18 +473,14 @@ require_once __DIR__ . '/includes/sidebar.php';
 
         <?php endif; ?>
 
-        <!-- ══════════════════════════════════════
-             TAMPILAN USER BIASA
-        ══════════════════════════════════════ -->
+        <!--TAMPILAN USER BIASA -->
         <?php if (!$is_admin): ?>
 
-        <!-- Welcome Banner -->
         <div class="welcome-banner">
             <h2>Hallo, <?= htmlspecialchars($user['nama']) ?>!</h2>
             <p>Selamat datang di LITERA. Temukan buku favoritmu dan mulai membaca hari ini. Have a good day!</p>
         </div>
 
-        <!-- Stats Grid User -->
         <div class="stats-grid cols-4">
             <div class="stat-card simple">
                 <div class="num"><?= $sedang_dipinjam ?></div>
@@ -633,7 +500,6 @@ require_once __DIR__ . '/includes/sidebar.php';
             </div>
         </div>
 
-        <!-- Tabel Peminjaman Saya -->
         <div class="section-card">
             <div class="section-header">
                 <svg width="18" height="18" fill="none" stroke="#2563EB" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
@@ -673,7 +539,6 @@ require_once __DIR__ . '/includes/sidebar.php';
             </div>
         </div>
 
-        <!-- Grid Buku Tersedia -->
         <div class="section-card">
             <div class="section-header">
                 <svg width="18" height="18" fill="none" stroke="#2563EB" stroke-width="2" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
@@ -710,7 +575,7 @@ require_once __DIR__ . '/includes/sidebar.php';
 
         <?php endif; ?>
 
-    </div><!-- /content -->
+    </div>
 </main>
 
 <?php if ($is_admin): ?>

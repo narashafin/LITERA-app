@@ -23,7 +23,6 @@ if (is_logged_in()) {
             font-family: 'Nunito', sans-serif; 
         }
         
-        /* BASE MOBILE FIRST (Layar HP) */
         body {
             background: linear-gradient(135deg, #EBF3FC 0%, #C9D8E8 100%);
             min-height: 100vh;

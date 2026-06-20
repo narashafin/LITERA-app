@@ -13,7 +13,7 @@ $sq     = mysqli_real_escape_string($conn, $search);
 $conditions = [];
 if ($search) $conditions[] = "(b.judul LIKE '%$sq%' OR b.penulis LIKE '%$sq%' OR b.isbn LIKE '%$sq%')";
 if ($cat_f)  $conditions[] = "b.category_id = $cat_f";
-$where = $conditions ? 'WHERE ' . implode(' AND ', $conditions) : '';
+$where = $conditions ? 'WHERE ' . implode(' AND ', $conditions) : ''; //implode buat gabungin elemen2 srry jdi 1 string
 
 $books_res = mysqli_query($conn,
     "SELECT b.*, c.nama AS nama_kategori, r.nama AS nama_rak
@@ -38,42 +38,294 @@ while ($r = mysqli_fetch_assoc($cats_res)) $cats[] = $r;
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../../assets/app.css">
 <style>
-.table-head-right{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-.filter-form select{padding:9px 14px;border:2px solid #C7D8F8;border-radius:9px;font-family:'Nunito',sans-serif;font-size:.85rem;color:var(--navy);outline:none;cursor:pointer;background:#fff}
-.filter-form select:focus{border-color:var(--blue-dark)}
-.btn-tambah{display:inline-flex;align-items:center;gap:7px;padding:9px 18px;background:linear-gradient(135deg,var(--navy),var(--blue-dark));color:#fff;text-decoration:none;border-radius:10px;font-size:.85rem;font-weight:700;font-family:'Nunito',sans-serif;transition:opacity .2s}
-.btn-tambah:hover{opacity:.9}
-.book-cover-thumb{width:44px;height:60px;object-fit:cover;border-radius:6px;background:#D6E4F0;display:block}
-.cover-placeholder{width:44px;height:60px;border-radius:6px;background:linear-gradient(135deg,#C9D8E8,#A8C3DB);display:flex;align-items:center;justify-content:center;color:#7A9ABB;flex-shrink:0}
-.badge-stok{display:inline-block;padding:3px 11px;border-radius:20px;font-size:.72rem;font-weight:700}
-.stok-ok{background:#DCFCE7;color:#166534;border:1px solid #BBF7D0}
-.stok-low{background:#FEF3C7;color:#92400E;border:1px solid #FDE68A}
-.stok-habis{background:#FEE2E2;color:#991B1B;border:1px solid #FECACA}
-.badge-cat{display:inline-block;padding:3px 11px;border-radius:20px;font-size:.72rem;font-weight:700;background:#EFF6FF;color:#1D4ED8;border:1px solid #BFDBFE}
-.view-toggle{display:flex;gap:6px}
-.btn-view{padding:7px 12px;border:2px solid #C7D8F8;border-radius:8px;background:#fff;cursor:pointer;color:var(--muted);transition:all .2s;display:flex;align-items:center;gap:4px;font-size:.78rem;font-weight:700;font-family:'Nunito',sans-serif}
-.btn-view.active,.btn-view:hover{border-color:var(--blue-dark);color:var(--blue-dark);background:#EFF6FF}
-.books-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:20px;padding:24px}
-.book-card-grid{background:#fff;border:1px solid #E2ECF8;border-radius:14px;overflow:hidden;transition:transform .2s,box-shadow .2s}
-.book-card-grid:hover{transform:translateY(-4px);box-shadow:0 12px 30px rgba(30,58,95,.12)}
-.book-card-grid .cover{width:100%;height:200px;object-fit:cover;display:block;background:#D6E4F0}
-.book-card-grid .cover-ph{width:100%;height:200px;background:linear-gradient(135deg,#C9D8E8,#A8C3DB);display:flex;align-items:center;justify-content:center;color:#7A9ABB}
-.book-card-grid .info{padding:14px}
-.book-card-grid .title{font-size:.88rem;font-weight:700;color:var(--navy);margin-bottom:4px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-.book-card-grid .author{font-size:.75rem;color:var(--muted);font-weight:500}
-.book-card-grid .footer{padding:0 14px 12px;display:flex;align-items:center;justify-content:space-between}
-.modal-overlay{display:none;position:fixed;inset:0;background:rgba(15,23,42,.45);backdrop-filter:blur(2px);z-index:999;align-items:center;justify-content:center}
-.modal-overlay.active{display:flex}
-.modal-box{background:#fff;border-radius:20px;padding:32px 28px;width:100%;max-width:380px;box-shadow:0 20px 60px rgba(30,58,95,.18);text-align:center}
-.modal-icon{width:52px;height:52px;background:#FEF2F2;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 16px}
-.modal-box h3{font-size:1.05rem;font-weight:800;color:var(--navy);margin-bottom:8px}
-.modal-box p{font-size:.875rem;color:var(--muted);line-height:1.5;margin-bottom:24px}
-.modal-actions{display:flex;gap:10px;justify-content:center}
-.modal-btn-cancel{padding:10px 24px;background:#F1F5F9;color:var(--muted);border:none;border-radius:10px;font-family:'Nunito',sans-serif;font-size:.875rem;font-weight:700;cursor:pointer}
-.modal-btn-cancel:hover{background:#E2E8F0}
-.modal-btn-del{padding:10px 24px;background:#EF4444;color:#fff;border:none;border-radius:10px;font-family:'Nunito',sans-serif;font-size:.875rem;font-weight:700;cursor:pointer;transition:opacity .2s}
-.modal-btn-del:hover{opacity:.88}
-@media(max-width:640px){.books-grid{grid-template-columns:repeat(2,1fr)}}
+.table-head-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.filter-form select {
+    padding: 9px 14px;
+    border: 2px solid #C7D8F8;
+    border-radius: 9px;
+    font-family: 'Nunito', sans-serif;
+    font-size: .85rem;
+    color: var(--navy);
+    outline: none;
+    cursor: pointer;
+    background: #fff;
+}
+
+.filter-form select:focus {
+    border-color: var(--blue-dark);
+}
+
+.btn-tambah {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 9px 18px;
+    background: linear-gradient(135deg, var(--navy), var(--blue-dark));
+    color: #fff;
+    text-decoration: none;
+    border-radius: 10px;
+    font-size: .85rem;
+    font-weight: 700;
+    font-family: 'Nunito', sans-serif;
+    transition: opacity .2s;
+}
+
+.btn-tambah:hover {
+    opacity: .9;
+}
+
+.book-cover-thumb {
+    width: 44px;
+    height: 60px;
+    object-fit: cover;
+    border-radius: 6px;
+    background: #D6E4F0;
+    display: block;
+}
+
+.cover-placeholder {
+    width: 44px;
+    height: 60px;
+    border-radius: 6px;
+    background: linear-gradient(135deg, #C9D8E8, #A8C3DB);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #7A9ABB;
+    flex-shrink: 0;
+}
+
+.badge-stok {
+    display: inline-block;
+    padding: 3px 11px;
+    border-radius: 20px;
+    font-size: .72rem;
+    font-weight: 700;
+}
+
+.stok-ok {
+    background: #DCFCE7;
+    color: #166534;
+    border: 1px solid #BBF7D0;
+}
+
+.stok-low {
+    background: #FEF3C7;
+    color: #92400E;
+    border: 1px solid #FDE68A;
+}
+
+.stok-habis {
+    background: #FEE2E2;
+    color: #991B1B;
+    border: 1px solid #FECACA;
+}
+
+.badge-cat {
+    display: inline-block;
+    padding: 3px 11px;
+    border-radius: 20px;
+    font-size: .72rem;
+    font-weight: 700;
+    background: #EFF6FF;
+    color: #1D4ED8;
+    border: 1px solid #BFDBFE;
+}
+
+.view-toggle {
+    display: flex;
+    gap: 6px;
+}
+
+.btn-view {
+    padding: 7px 12px;
+    border: 2px solid #C7D8F8;
+    border-radius: 8px;
+    background: #fff;
+    cursor: pointer;
+    color: var(--muted);
+    transition: all .2s;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: .78rem;
+    font-weight: 700;
+    font-family: 'Nunito', sans-serif;
+}
+
+.btn-view.active,
+.btn-view:hover {
+    border-color: var(--blue-dark);
+    color: var(--blue-dark);
+    background: #EFF6FF;
+}
+
+.books-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 20px;
+    padding: 24px;
+}
+
+.book-card-grid {
+    background: #fff;
+    border: 1px solid #E2ECF8;
+    border-radius: 14px;
+    overflow: hidden;
+    transition: transform .2s, box-shadow .2s;
+}
+
+.book-card-grid:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 30px rgba(30, 58, 95, .12);
+}
+
+.book-card-grid .cover {
+    width: 100%;
+    height: 200px;
+    object-fit: cover;
+    display: block;
+    background: #D6E4F0;
+}
+
+.book-card-grid .cover-ph {
+    width: 100%;
+    height: 200px;
+    background: linear-gradient(135deg, #C9D8E8, #A8C3DB);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #7A9ABB;
+}
+
+.book-card-grid .info {
+    padding: 14px;
+}
+
+.book-card-grid .title {
+    font-size: .88rem;
+    font-weight: 700;
+    color: var(--navy);
+    margin-bottom: 4px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.book-card-grid .author {
+    font-size: .75rem;
+    color: var(--muted);
+    font-weight: 500;
+}
+
+.book-card-grid .footer {
+    padding: 0 14px 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, .45);
+    backdrop-filter: blur(2px);
+    z-index: 999;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-overlay.active {
+    display: flex;
+}
+
+.modal-box {
+    background: #fff;
+    border-radius: 20px;
+    padding: 32px 28px;
+    width: 100%;
+    max-width: 380px;
+    box-shadow: 0 20px 60px rgba(30, 58, 95, .18);
+    text-align: center;
+}
+
+.modal-icon {
+    width: 52px;
+    height: 52px;
+    background: #FEF2F2;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 16px;
+}
+
+.modal-box h3 {
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: var(--navy);
+    margin-bottom: 8px;
+}
+
+.modal-box p {
+    font-size: .875rem;
+    color: var(--muted);
+    line-height: 1.5;
+    margin-bottom: 24px;
+}
+
+.modal-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+}
+
+.modal-btn-cancel {
+    padding: 10px 24px;
+    background: #F1F5F9;
+    color: var(--muted);
+    border: none;
+    border-radius: 10px;
+    font-family: 'Nunito', sans-serif;
+    font-size: .875rem;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.modal-btn-cancel:hover {
+    background: #E2E8F0;
+}
+
+.modal-btn-del {
+    padding: 10px 24px;
+    background: #EF4444;
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    font-family: 'Nunito', sans-serif;
+    font-size: .875rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: opacity .2s;
+}
+
+.modal-btn-del:hover {
+    opacity: .88;
+}
+
+@media (max-width: 640px) {
+    .books-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
 </style>
 </head>
 <body>
@@ -115,11 +367,11 @@ require_once __DIR__ . '/../../includes/sidebar.php';
                 </h2>
                 <div class="table-head-right">
                     <form method="GET" class="filter-form" id="filterForm">
-                        <select name="cat" onchange="this.form.submit()">
+                        <select name="cat" onchange="this.form.submit()"> <!-- klau pnua gnti pilihan lngsung submit otomats -->
                             <option value="">Semua Kategori</option>
                             <?php foreach ($cats as $c): ?>
                             <option value="<?= $c['id'] ?>" <?= $cat_f == $c['id'] ? 'selected' : '' ?>>
-                                <?= htmlspecialchars($c['nama']) ?>
+                                <?= htmlspecialchars($c['nama']) ?> <!-- untuk konversi krkter khusus html jdi entitas html biar dta yg ditamilkan aman ga dieksekusi jdi kode-->
                             </option>
                             <?php endforeach; ?>
                         </select>
@@ -266,7 +518,7 @@ require_once __DIR__ . '/../../includes/sidebar.php';
 
 <script>
 function bukaModal(url) {
-    document.getElementById('modalHapusLink').href = url;
+    document.getElementById('modalHapusLink').href = url; 
     document.getElementById('modalHapus').classList.add('active');
 }
 function tutupModal() {

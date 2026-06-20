@@ -276,7 +276,6 @@ tr:hover td {
   background: #fafbff;
 }
 
-/* ════ SEARCH FORM ════ */
 .search-form {
   display: flex;
   gap: 8px;
@@ -306,7 +305,6 @@ tr:hover td {
   font-family: "Nunito", sans-serif;
 }
 
-/* ════ TOMBOL AKSI ════ */
 .actions {
   display: flex;
   gap: 7px;
@@ -376,7 +374,6 @@ tr:hover td {
   align-items: center;
 }
 
-/* ════ FORM CARD ════ */
 .form-card {
   background: #fff;
   border-radius: 16px;
@@ -497,7 +494,7 @@ textarea {
   -webkit-overflow-scrolling: touch;
 }
 
-/* ════ HAMBURGER & OVERLAY — hidden by default (desktop) ════ */
+/* ════ HAMBURGER & OVERLAY ════ */
 .hamburger-btn,
 .sidebar-overlay {
   display: none;

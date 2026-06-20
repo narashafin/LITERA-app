@@ -58,7 +58,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     font-family: 'Nunito', sans-serif; 
 }
 
-/* BASE MOBILE FIRST (Layar HP) */
 body {
     background: linear-gradient(135deg, #EBF3FC 0%, #C9D8E8 100%);
     min-height: 100vh;
@@ -106,9 +105,8 @@ body {
     margin-bottom: 12px; 
 }
 
-/* Form Group Ringkas */
 .fg { 
-    margin-bottom: 12px; /* Jarak antar jempol dipersempit */
+    margin-bottom: 12px; 
 }
 .fg label { 
     display: block; 
@@ -119,7 +117,7 @@ body {
 }
 .fg input {
     width: 100%; 
-    padding: 9px 12px; /* Ukuran padding input dikecilkan biar ga gemuk */
+    padding: 9px 12px;
     border: 1.5px solid #CBD5E1;
     border-radius: 6px; 
     font-size: 0.85rem; 

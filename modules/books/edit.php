@@ -83,17 +83,74 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../../assets/app.css">
 <style>
-.grid-form{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px}
-.span2{grid-column:span 2}
-.span3{grid-column:span 3}
-select{cursor:pointer}
-.cover-preview{display:none;margin-top:10px}
-.cover-preview img{height:100px;border-radius:8px;object-fit:cover;border:2px solid #E2ECF8}
-.cover-current{display:flex;align-items:center;gap:12px;margin-top:8px}
-.cover-current img{height:80px;width:56px;border-radius:8px;object-fit:cover;border:2px solid #E2ECF8}
-.cover-current span{font-size:.78rem;color:var(--muted)}
-@media(max-width:900px){.grid-form{grid-template-columns:1fr 1fr}.span3{grid-column:span 2}}
-@media(max-width:640px){.grid-form{grid-template-columns:1fr}.span2,.span3{grid-column:span 1}}
+.grid-form {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 16px;
+}
+
+.span2 {
+    grid-column: span 2;
+}
+
+.span3 {
+    grid-column: span 3;
+}
+
+select {
+    cursor: pointer;
+}
+
+.cover-preview {
+    display: none;
+    margin-top: 10px;
+}
+
+.cover-preview img {
+    height: 100px;
+    border-radius: 8px;
+    object-fit: cover;
+    border: 2px solid #E2ECF8;
+}
+
+.cover-current {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 8px;
+}
+
+.cover-current img {
+    height: 80px;
+    width: 56px;
+    border-radius: 8px;
+    object-fit: cover;
+    border: 2px solid #E2ECF8;
+}
+
+.cover-current span {
+    font-size: .78rem;
+    color: var(--muted);
+}
+
+@media (max-width: 900px) {
+    .grid-form {
+        grid-template-columns: 1fr 1fr;
+    }
+    .span3 {
+        grid-column: span 2;
+    }
+}
+
+@media (max-width: 640px) {
+    .grid-form {
+        grid-template-columns: 1fr;
+    }
+    .span2,
+    .span3 {
+        grid-column: span 1;
+    }
+}
 </style>
 </head>
 <body>

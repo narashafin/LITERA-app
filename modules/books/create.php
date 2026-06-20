@@ -70,37 +70,83 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-// Helper: kembalikan class is-invalid jika field punya error
 function fieldErr($field) {
     global $errors;
     return isset($errors[$field]) ? ' is-invalid' : '';
 }
+
 ?>
 <!DOCTYPE html>
 <html lang="id">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Tambah Buku — LITERA</title>
+<title>Tambah Buku LITERA</title>
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../../assets/app.css">
 <style>
-/* ── Spesifik halaman create buku ── */
-.grid-form{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px}
-.span2{grid-column:span 2}
-.span3{grid-column:span 3}
-select{cursor:pointer}
-.cover-preview{display:none;margin-top:10px}
-.cover-preview img{height:100px;border-radius:8px;object-fit:cover;border:2px solid #E2ECF8}
+.grid-form {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 16px;
+}
 
-/* Highlight field error */
+.span2 {
+    grid-column: span 2;
+}
+
+.span3 {
+    grid-column: span 3;
+}
+
+select {
+    cursor: pointer;
+}
+
+.cover-preview {
+    display: none;
+    margin-top: 10px;
+}
+
+.cover-preview img {
+    height: 100px;
+    border-radius: 8px;
+    object-fit: cover;
+    border: 2px solid #E2ECF8;
+}
+
 input.is-invalid,
 select.is-invalid,
-textarea.is-invalid{border-color:var(--red)!important;box-shadow:0 0 0 3px rgba(239,68,68,.1)!important}
-.field-error{font-size:.75rem;color:var(--red);margin-top:3px;font-weight:600}
+textarea.is-invalid {
+    border-color: var(--red) !important;
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, .1) !important;
+}
 
-@media(max-width:900px){.grid-form{grid-template-columns:1fr 1fr}.span3{grid-column:span 2}}
-@media(max-width:640px){.grid-form{grid-template-columns:1fr}.span2,.span3{grid-column:span 1}}
+.field-error {
+    font-size: .75rem;
+    color: var(--red);
+    margin-top: 3px;
+    font-weight: 600;
+}
+
+@media (max-width: 900px) {
+    .grid-form {
+        grid-template-columns: 1fr 1fr;
+    }
+    .span3 {
+        grid-column: span 2;
+    }
+}
+
+@media (max-width: 640px) {
+    .grid-form {
+        grid-template-columns: 1fr;
+    }
+    .span2,
+    .span3 {
+        grid-column: span 1;
+    }
+}
 </style>
 </head>
 <body>
@@ -229,7 +275,7 @@ require_once __DIR__ . '/../../includes/sidebar.php';
                         <label>Upload Cover</label>
                         <input type="file" name="cover" accept=".jpg,.jpeg,.png,.webp"
                                class="<?= fieldErr('cover') ?>"
-                               onchange="previewCover(this)">
+                               onchange="previewCover(this)"> <!-- gambr lngsung muncul sblm disimpan-->
                         <?php if (isset($errors['cover'])): ?>
                         <span class="field-error">⚠ <?= $errors['cover'] ?></span>
                         <?php endif; ?>
@@ -253,9 +299,9 @@ function previewCover(input) {
     const preview = document.getElementById('coverPreview');
     const img     = document.getElementById('coverImg');
     if (input.files && input.files[0]) {
-        const reader = new FileReader();
-        reader.onload = e => { img.src = e.target.result; preview.style.display = 'block'; };
-        reader.readAsDataURL(input.files[0]);
+        const reader = new FileReader(); //baca file dr komputer user
+        reader.onload = e => { img.src = e.target.result; preview.style.display = 'block'; }; //ngsi gmbr preview
+        reader.readAsDataURL(input.files[0]); //nmpilin preview
     }
 }
 </script>

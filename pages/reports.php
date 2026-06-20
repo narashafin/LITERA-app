@@ -10,7 +10,6 @@ $total_pinjam    = mysqli_fetch_row(mysqli_query($conn, "SELECT COUNT(*) FROM bo
 $sedang_dipinjam = mysqli_fetch_row(mysqli_query($conn, "SELECT COUNT(*) FROM borrowings WHERE status='dipinjam'"))[0] ?? 0;
 $dikembalikan    = mysqli_fetch_row(mysqli_query($conn, "SELECT COUNT(*) FROM borrowings WHERE status='dikembalikan'"))[0] ?? 0;
 
-// FIXED: nama kolom yang benar adalah total_denda, bukan jumlah_denda
 $total_denda = mysqli_fetch_row(mysqli_query($conn, "SELECT COALESCE(SUM(total_denda),0) FROM fines"))[0] ?? 0;
 $denda_lunas = mysqli_fetch_row(mysqli_query($conn, "SELECT COALESCE(SUM(total_denda),0) FROM fines WHERE status='lunas'"))[0] ?? 0;
 $denda_belum = mysqli_fetch_row(mysqli_query($conn, "SELECT COALESCE(SUM(total_denda),0) FROM fines WHERE status='belum_lunas'"))[0] ?? 0;
@@ -36,11 +35,8 @@ $member_aktif = mysqli_query($conn, "
     LIMIT 5
 ");
 
-// ═══════════════════════════════════════════════════════════════
-// ─── Query lengkap untuk Excel Export ────────────────────────
-// ═══════════════════════════════════════════════════════════════
-
-// Sheet: Daftar Buku (lengkap + JOIN category & rack)
+//EXCELL
+// Sheet: Daftar Buku 
 $q_books = mysqli_query($conn, "
     SELECT
         bk.id,
@@ -235,7 +231,7 @@ if (empty($chart_labels)) {
 $chart_labels_json = json_encode($chart_labels);
 $chart_data_json   = json_encode($chart_data);
 
-// Tandai halaman aktif untuk sidebar
+
 $active_page = 'reports';
 ?>
 <!DOCTYPE html>
@@ -249,109 +245,43 @@ $active_page = 'reports';
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
-
-/* ── Styles khusus halaman Laporan ── */
-
 /* Stats Grid */
-.stats-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 16px;
-    margin-bottom: 28px;
-}
-.stat-card {
-    background   : #D6E4F0;
-    border-radius: 14px;
-    padding      : 22px;
-    border       : 1px solid rgba(37,99,235,.08);
-    transition   : transform .2s, box-shadow .2s;
-}
-.stat-card:hover { transform:translateY(-2px); box-shadow:0 6px 20px rgba(37,99,235,.1); }
-.stat-card .num  { font-size:1.8rem; font-weight:800; color:#1E3A5F; line-height:1; }
-.stat-card .lbl  { font-size:.78rem; color:#64748B; font-weight:600; margin-top:6px; }
+.stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 28px; }
+.stat-card { background: #D6E4F0; border-radius: 14px; padding: 22px; border: 1px solid rgba(37,99,235,.08); transition: transform .2s, box-shadow .2s; }
+.stat-card:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(37,99,235,.1); }
+.stat-card .num { font-size: 1.8rem; font-weight: 800; color: #1E3A5F; line-height: 1; }
+.stat-card .lbl { font-size: .78rem; color: #64748B; font-weight: 600; margin-top: 6px; }
 
-/* Section cards (konsisten dengan dashboard) */
-.section-card {
-    background   : #fff;
-    border-radius: 16px;
-    border       : 1px solid #E2E8F0;
-    overflow     : hidden;
-    margin-bottom: 24px;
-}
-.section-header {
-    display      : flex;
-    align-items  : center;
-    gap          : 10px;
-    padding      : 18px 24px 14px;
-    border-bottom: 1px solid #F1F5F9;
-    background   : #FAFBFC;
-}
-.section-header h3 { font-size:1rem; font-weight:800; color:#1E3A5F; }
+.section-card { background: #fff; border-radius: 16px; border: 1px solid #E2E8F0; overflow: hidden; margin-bottom: 24px; }
+.section-header { display: flex; align-items: center; gap: 10px; padding: 18px 24px 14px; border-bottom: 1px solid #F1F5F9; background: #FAFBFC; }
+.section-header h3 { font-size: 1rem; font-weight: 800; color: #1E3A5F; }
 
-/* Grid 2 kolom */
-.grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:24px; margin-bottom:24px; }
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px; }
 
-/* Chart */
-.chart-wrap { height:220px; padding:20px 24px; position:relative; }
+.chart-wrap { height: 220px; padding: 20px 24px; position: relative; }
 
-/* Table di dalam section-card */
-.section-card table { width:100%; border-collapse:collapse; }
-.section-card thead th {
-    padding      : 11px 18px;
-    text-align   : left;
-    font-size    : .72rem;
-    font-weight  : 700;
-    color        : #64748B;
-    text-transform: uppercase;
-    letter-spacing: .8px;
-    background   : #F8FAFC;
-    border-bottom: 1px solid #E2E8F0;
-}
-.section-card tbody tr { border-bottom:1px solid #F1F5F9; transition:background .15s; }
-.section-card tbody tr:last-child { border-bottom:none; }
-.section-card tbody tr:hover { background:#F8FBFF; }
-.section-card tbody td { padding:12px 18px; font-size:.85rem; color:#374151; font-weight:500; }
+.section-card table { width: 100%; border-collapse: collapse; }
+.section-card thead th { padding: 11px 18px; text-align: left; font-size: .72rem; font-weight: 700; color: #64748B; text-transform: uppercase; letter-spacing: .8px; background: #F8FAFC; border-bottom: 1px solid #E2E8F0; }
+.section-card tbody tr { border-bottom: 1px solid #F1F5F9; transition: background .15s; }
+.section-card tbody tr:last-child { border-bottom: none; }
+.section-card tbody tr:hover { background: #F8FBFF; }
+.section-card tbody td { padding: 12px 18px; font-size: .85rem; color: #374151; font-weight: 500; }
 
-/* Badge */
-.badge-green { background:#DCFCE7; color:#166534; }
-.badge-red   { background:#FEE2E2; color:#991B1B; }
+.badge-green { background: #DCFCE7; color: #166534; }
+.badge-red { background: #FEE2E2; color: #991B1B; }
 
-.empty-state { text-align:center; padding:32px 20px; color:#94A3B8; font-size:.875rem; }
+.empty-state { text-align: center; padding: 32px 20px; color: #94A3B8; font-size: .875rem; }
 
-/* ── Export Buttons ── */
-.export-actions {
-    display     : flex;
-    gap         : 8px;
-    margin-top  : 12px;
-}
-.btn-export {
-    display     : inline-flex;
-    align-items : center;
-    gap         : 7px;
-    padding     : 8px 18px;
-    border      : none;
-    border-radius: 9px;
-    font-family : "Nunito", sans-serif;
-    font-size   : .82rem;
-    font-weight : 700;
-    cursor      : pointer;
-    transition  : opacity .2s, transform .15s;
-    text-decoration: none;
-}
-.btn-export:hover { opacity:.88; transform:translateY(-1px); }
-.btn-excel {
-    background  : linear-gradient(135deg,#1d6f42,#217346);
-    color       : #fff;
-}
-.btn-print {
-    background  : linear-gradient(135deg,#1e3a5f,#2563eb);
-    color       : #fff;
-}
+.export-actions { display: flex; gap: 8px; margin-top: 12px; }
+.btn-export { display: inline-flex; align-items: center; gap: 7px; padding: 8px 18px; border: none; border-radius: 9px; font-family: "Nunito", sans-serif; font-size: .82rem; font-weight: 700; cursor: pointer; transition: opacity .2s, transform .15s; text-decoration: none; }
+.btn-export:hover { opacity: .88; transform: translateY(-1px); }
+.btn-excel { background: linear-gradient(135deg,#1d6f42,#217346); color: #fff; }
+.btn-print { background: linear-gradient(135deg,#1e3a5f,#2563eb); color: #fff; }
 
 /* ── Responsive ── */
 @media (max-width: 1100px) {
     .stats-grid { grid-template-columns: repeat(2, 1fr); }
-    .grid-2     { grid-template-columns: 1fr; }
+    .grid-2 { grid-template-columns: 1fr; }
 }
 @media (max-width: 600px) {
     .stats-grid { grid-template-columns: 1fr 1fr; }
@@ -362,99 +292,26 @@ $active_page = 'reports';
 
 /* ── Print / PDF ── */
 @media print {
-    /* Sembunyikan elemen tidak perlu */
-    .sidebar,
-    .hamburger-btn,
-    .sidebar-overlay,
-    .export-actions,
-    .page-header p { display: none !important; }
-
-    body {
-        background  : #fff !important;
-        padding-top : 0 !important;
-        font-family : "Nunito", Arial, sans-serif;
-    }
+    .sidebar, .hamburger-btn, .sidebar-overlay, .export-actions, .page-header p { display: none !important; }
+    body { background: #fff !important; padding-top: 0 !important; font-family: "Nunito", Arial, sans-serif; }
     .main { margin-left: 0 !important; }
     .content { padding: 0 16px !important; }
-
-    /* Print header */
-    .page-header {
-        border-bottom: 2px solid #1e3a5f !important;
-        padding       : 12px 16px !important;
-        background    : #fff !important;
-    }
+    .page-header { border-bottom: 2px solid #1e3a5f !important; padding: 12px 16px !important; background: #fff !important; }
     .page-header h1 { font-size: 1.2rem !important; color: #1e3a5f !important; }
-
-    /* Paksa warna latar stat-card tetap terlihat */
-    .stat-card {
-        background        : #d6e4f0 !important;
-        -webkit-print-color-adjust: exact;
-        print-color-adjust: exact;
-        border            : 1px solid #b0c4de !important;
-        break-inside      : avoid;
-    }
-    .stats-grid { grid-template-columns: repeat(4,1fr) !important; gap:10px !important; margin-bottom:18px !important; }
+    .stat-card { background: #d6e4f0 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; border: 1px solid #b0c4de !important; break-inside: avoid; }
+    .stats-grid { grid-template-columns: repeat(4,1fr) !important; gap: 10px !important; margin-bottom: 18px !important; }
     .stat-card .num { font-size: 1.4rem !important; }
-
-    /* Section cards */
-    .section-card {
-        border       : 1px solid #dce6f4 !important;
-        break-inside : avoid;
-        margin-bottom: 14px !important;
-    }
-    .section-header {
-        background   : #f0f6ff !important;
-        -webkit-print-color-adjust: exact;
-        print-color-adjust: exact;
-        padding      : 10px 16px !important;
-    }
+    .section-card { border: 1px solid #dce6f4 !important; break-inside: avoid; margin-bottom: 14px !important; }
+    .section-header { background: #f0f6ff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; padding: 10px 16px !important; }
     .section-header h3 { font-size: .9rem !important; }
-
-    /* Tabel */
-    .section-card thead th {
-        background   : #f8fafc !important;
-        -webkit-print-color-adjust: exact;
-        print-color-adjust: exact;
-        font-size    : .68rem !important;
-        padding      : 8px 12px !important;
-    }
+    .section-card thead th { background: #f8fafc !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; font-size: .68rem !important; padding: 8px 12px !important; }
     .section-card tbody td { padding: 8px 12px !important; font-size: .8rem !important; }
-
-    /* Badge tetap berwarna */
-    .badge-green {
-        background   : #dcfce7 !important;
-        color        : #166534 !important;
-        -webkit-print-color-adjust: exact;
-        print-color-adjust: exact;
-    }
-    .badge-red {
-        background   : #fee2e2 !important;
-        color        : #991b1b !important;
-        -webkit-print-color-adjust: exact;
-        print-color-adjust: exact;
-    }
-
-    /* Grid layout saat print */
+    .badge-green { background: #dcfce7 !important; color: #166534 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .badge-red { background: #fee2e2 !important; color: #991b1b !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     .grid-2 { grid-template-columns: 1fr 1fr !important; gap: 14px !important; }
-
-    /* Chart area */
     .chart-wrap { height: 180px !important; padding: 12px 16px !important; }
-
-    /* Print footer */
-    .print-footer {
-        display      : block !important;
-        text-align   : center;
-        font-size    : .72rem;
-        color        : #94a3b8;
-        margin-top   : 20px;
-        padding-top  : 10px;
-        border-top   : 1px solid #e2e8f0;
-    }
-
-    @page {
-        size   : A4 landscape;
-        margin : 15mm 12mm;
-    }
+    .print-footer { display: block !important; text-align: center; font-size: .72rem; color: #94a3b8; margin-top: 20px; padding-top: 10px; border-top: 1px solid #e2e8f0; }
+    @page { size: A4 landscape; margin: 15mm 12mm; }
 }
 
 /* Sembunyikan print footer di layar */
@@ -567,7 +424,6 @@ require_once __DIR__ . '/../includes/sidebar.php';
 
         </div>
 
-        <!-- ── Member Aktif + Ringkasan Denda ── -->
         <div class="grid-2">
 
             <!-- Member paling aktif -->
@@ -641,9 +497,8 @@ require_once __DIR__ . '/../includes/sidebar.php';
 
         </div>
 
-    </div><!-- /content -->
+    </div>
 
-    <!-- Footer khusus print -->
     <div class="print-footer">
         Dicetak dari Sistem LITERA &mdash; <?= date('d F Y, H:i') ?> WIB
     </div>
@@ -651,9 +506,6 @@ require_once __DIR__ . '/../includes/sidebar.php';
 </main>
 
 <script>
-// ══════════════════════════════════════════════════════════════
-// DATA DARI PHP
-// ══════════════════════════════════════════════════════════════
 const DB = {
     stats: {
         total_buku      : <?= (int)$total_buku ?>,
@@ -674,21 +526,16 @@ const DB = {
     returns    : <?= $json_returns ?>,
 };
 
-// ══════════════════════════════════════════════════════════════
-// HELPERS STYLING
-// ══════════════════════════════════════════════════════════════
-
 // Warna brand LITERA
 const COLOR = {
-    navy    : '1E3A5F',  // header utama
-    blue    : '2563EB',  // aksen biru
-    lightBg : 'D6E4F0',  // bg stat card
-    headerBg: '1E3A5F',  // bg header kolom tabel
-    headerFg: 'FFFFFF',  // teks header
-    rowAlt  : 'EEF4FB',  // baris ganjil
+    navy    : '1E3A5F',  
+    blue    : '2563EB',  
+    lightBg : 'D6E4F0',  
+    headerBg: '1E3A5F',  
+    headerFg: 'FFFFFF',
+    rowAlt  : 'EEF4FB', 
     rowWhite: 'FFFFFF',  // baris genap
-    green   : 'DCFCE7',  // badge hijau bg
-    greenFg : '166534',
+    green   : 'DCFCE7',  
     red     : 'FEE2E2',
     redFg   : '991B1B',
     yellow  : 'FEF9C3',
@@ -696,7 +543,7 @@ const COLOR = {
     muted   : '64748B',
 };
 
-// Style untuk header baris (judul sheet horizontal)
+
 function hStyle(bgHex, fgHex = 'FFFFFF', sz = 11, bold = true) {
     return {
         font  : { bold, sz, color: { rgb: fgHex } },
@@ -711,7 +558,7 @@ function hStyle(bgHex, fgHex = 'FFFFFF', sz = 11, bold = true) {
     };
 }
 
-// Style untuk cell data biasa
+
 function dStyle(bgHex = 'FFFFFF', fgHex = '1E3A5F', bold = false, align = 'left') {
     return {
         font  : { bold, sz: 10, color: { rgb: fgHex } },
@@ -724,7 +571,6 @@ function dStyle(bgHex = 'FFFFFF', fgHex = '1E3A5F', bold = false, align = 'left'
     };
 }
 
-// Style badge (status)
 function badgeStyle(status) {
     const map = {
         'tersedia'    : [COLOR.green,  COLOR.greenFg],
@@ -742,7 +588,7 @@ function badgeStyle(status) {
     return dStyle(bg, fg, true, 'center');
 }
 
-// Terapkan style ke range sel dalam sheet
+
 function styleRange(ws, r1, c1, r2, c2, styleFn) {
     for (let r = r1; r <= r2; r++) {
         for (let c = c1; c <= c2; c++) {
@@ -813,9 +659,7 @@ function buildSheet(headers, rows, colWidths, titleRow = null) {
 // ── Format rupiah ──
 function rp(n) { return 'Rp ' + Number(n).toLocaleString('id-ID'); }
 
-// ══════════════════════════════════════════════════════════════
-// EXPORT UTAMA
-// ══════════════════════════════════════════════════════════════
+//export
 function exportExcel() {
     const wb = XLSX.utils.book_new();
     const tgl = new Date().toLocaleDateString('id-ID', { day:'2-digit', month:'long', year:'numeric' });
